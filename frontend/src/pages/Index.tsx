@@ -4,6 +4,7 @@ import Features from "@/components/Features";
 import EventsShowcase from "@/components/EventsShowcase";
 import Sponsors from "@/components/Sponsors";
 import Footer from "@/components/Footer";
+import DashboardLinks from "@/components/DashboardLinks";
 
 const Index = () => {
   return (
@@ -11,8 +12,8 @@ const Index = () => {
       <Navigation />
       <main>
         <Hero />
+        <DashboardLinks />
         <Features />
-        <EventsShowcase />
         <Sponsors />
       </main>
       <Footer />
