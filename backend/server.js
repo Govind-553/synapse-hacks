@@ -33,13 +33,13 @@ const sqlPool = mysql.createPool({
 });
 
 // Import Routes
-const authRoutes = require('./src/routes/auth.routes');
-const eventRoutes = require('./src/routes/events.routes');
-const teamRoutes = require('./src/routes/teams.routes');
-const submissionRoutes = require('./src/routes/submissions.routes');
-const judgeRoutes = require('./src/routes/judges.routes');
-const announcementRoutes = require('./src/routes/announcements.routes');
-const leaderboardRoutes = require('./src/routes/leaderboard.routes');
+const authRoutes = require('./src/routes/auth_routes');
+const eventRoutes = require('./src/routes/events_routes');
+const teamRoutes = require('./src/routes/teams_routes');
+const submissionRoutes = require('./src/routes/submissions_routes');
+const judgeRoutes = require('./src/routes/judges_routes');
+const announcementRoutes = require('./src/routes/announcements_routes');
+const leaderboardRoutes = require('./src/routes/leaderboard_routes');
 const certificatesRoutes = require('./src/routes/certificates_routes')
 
 // Use Routes
