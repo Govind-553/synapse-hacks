@@ -40,6 +40,7 @@ const submissionRoutes = require('./src/routes/submissions.routes');
 const judgeRoutes = require('./src/routes/judges.routes');
 const announcementRoutes = require('./src/routes/announcements.routes');
 const leaderboardRoutes = require('./src/routes/leaderboard.routes');
+const certificatesRoutes = require('./src/routes/certificates_routes')
 
 // Use Routes
 app.use('/api/auth', authRoutes(sqlPool));
@@ -47,8 +48,9 @@ app.use('/api/events', eventRoutes(sqlPool));
 app.use('/api/teams', teamRoutes(sqlPool));
 app.use('/api/submissions', submissionRoutes);
 app.use('/api/judges', judgeRoutes(sqlPool));
-app.use('/api/announcements', announcementRoutes(io)); // Pass Socket.io instance
+app.use('/api/announcements', announcementRoutes(io)); 
 app.use('/api/leaderboard', leaderboardRoutes(sqlPool));
+app.use('/api/certificates', certificatesRoutes(sqlPool));
 
 // Socket.io for real-time updates
 io.on('connection', (socket) => {
