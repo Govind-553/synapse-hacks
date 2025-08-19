@@ -103,15 +103,15 @@ const Footer = () => {
             <ul className="space-y-3">
               <li className="flex items-center text-muted-foreground text-sm">
                 <Mail className="w-4 h-4 mr-3" />
-                hello@synapsehacks.com
+                admin@synapsehacks.com
               </li>
               <li className="flex items-center text-muted-foreground text-sm">
                 <Phone className="w-4 h-4 mr-3" />
-                +1 (555) 123-4567
+                +91 4004008138
               </li>
               <li className="flex items-start text-muted-foreground text-sm">
                 <MapPin className="w-4 h-4 mr-3 mt-0.5" />
-                <span>San Francisco, CA<br />United States</span>
+                <span>Mumbai, MH<br />India</span>
               </li>
             </ul>
           </div>
@@ -121,7 +121,7 @@ const Footer = () => {
         <div className="border-t border-white/10 mt-12 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="text-muted-foreground text-sm mb-4 md:mb-0">
-              © 2024 SynapseHacks. All rights reserved.
+              © 2025 SynapseHacks. All rights reserved.
             </div>
             <div className="flex space-x-6 text-sm">
               <Link to="/privacy" className="text-muted-foreground hover:text-foreground transition-colors">

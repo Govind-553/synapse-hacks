@@ -7,23 +7,29 @@ import { Users, Lightbulb, ExternalLink, Globe } from "lucide-react";
 const AboutPage = () => {
   const teamMembers = [
     {
-      name: "Jane Doe",
+      name: "Govind Choudhari",
       role: "CEO & Founder",
       bio: "Visionary leader passionate about fostering innovation in the tech community.",
-      avatar: "https://placehold.co/100x100/6A5ACD/ffffff?text=JD",
+      avatar: "https://placehold.co/100x100/6A5ACD/ffffff?text=GC",
     },
     {
-      name: "John Smith",
+      name: "Abhiruchi Kunte",
       role: "Head of Engineering",
       bio: "Software architect with a knack for building scalable and robust platforms.",
-      avatar: "https://placehold.co/100x100/FF6347/ffffff?text=JS",
+      avatar: "https://placehold.co/100x100/FF6347/ffffff?text=AK",
     },
     {
-      name: "Emily White",
+      name: "Sahil Kale",
       role: "Community Manager",
       bio: "Connects developers and builds a vibrant, collaborative ecosystem.",
-      avatar: "https://placehold.co/100x100/3CB371/ffffff?text=EW",
+      avatar: "https://placehold.co/100x100/3CB371/ffffff?text=SK",
     },
+    {
+      name: "Nishank Jain",
+      role: "Management Head",
+      bio: "Dynamic management head adept at steering strategy and cultivating growth.",
+      avatar: "https://placehold.co/100x100/3CB371/ffffff?text=NJ",
+    },    
   ];
 
   return (
@@ -79,7 +85,7 @@ const AboutPage = () => {
         </div>
 
         {/* Team Members Grid */}
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid md:grid-cols-2 gap-20">
           {teamMembers.map((member, index) => (
             <Card key={index} className="premium-card text-center group">
               <CardContent className="p-6">
