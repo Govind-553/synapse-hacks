@@ -1,6 +1,8 @@
 /**
  * @fileoverview Service for handling event-related business logic.
  */
+const { EVENT_TABLE } = require('../models/event_model');
+const { EVENT_PARTICIPANT_TABLE } = require('../models/event_participant_model');
 
 /**
  * Fetches all events from the database.
@@ -8,8 +10,9 @@
  * @returns {Promise<Array<object>>} An array of event objects.
  */
 exports.getAllEvents = async (sqlPool) => {
-  // Placeholder: Logic to fetch all events.
-  return [];
+  const query = `SELECT * FROM ${EVENT_TABLE}`;
+  const [rows] = await sqlPool.execute(query);
+  return rows;
 };
 
 /**
@@ -19,8 +22,9 @@ exports.getAllEvents = async (sqlPool) => {
  * @returns {Promise<object>} The event object.
  */
 exports.getEventById = async (eventId, sqlPool) => {
-  // Placeholder: Logic to fetch a single event.
-  return {};
+  const query = `SELECT * FROM ${EVENT_TABLE} WHERE id = ?`;
+  const [rows] = await sqlPool.execute(query, [eventId]);
+  return rows[0];
 };
 
 /**
@@ -30,8 +34,14 @@ exports.getEventById = async (eventId, sqlPool) => {
  * @returns {Promise<object>} The newly created event object.
  */
 exports.createEvent = async (eventData, sqlPool) => {
-  // Placeholder: Logic to insert a new event into the database.
-  return { id: 1, ...eventData };
+  const { title, theme, description, start_date, end_date, type, location, prize_pool, max_participants, organizer_id } = eventData;
+  const query = `
+    INSERT INTO ${EVENT_TABLE} (title, theme, description, start_date, end_date, type, location, prize_pool, max_participants, organizer_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+  const values = [title, theme, description, start_date, end_date, type, location, prize_pool, max_participants, organizer_id];
+  const [result] = await sqlPool.execute(query, values);
+  return { id: result.insertId, ...eventData };
 };
 
 /**
@@ -42,7 +52,8 @@ exports.createEvent = async (eventData, sqlPool) => {
  * @returns {Promise<object>} The updated event object.
  */
 exports.updateEvent = async (eventId, eventData, sqlPool) => {
-  // Placeholder: Logic to update an event in the database.
+  const query = `UPDATE ${EVENT_TABLE} SET ? WHERE id = ?`;
+  await sqlPool.execute(query, [eventData, eventId]);
   return { id: eventId, ...eventData };
 };
 
@@ -53,8 +64,9 @@ exports.updateEvent = async (eventId, eventData, sqlPool) => {
  * @returns {Promise<boolean>} True if the event was deleted, false otherwise.
  */
 exports.deleteEvent = async (eventId, sqlPool) => {
-  // Placeholder: Logic to delete an event from the database.
-  return true;
+  const query = `DELETE FROM ${EVENT_TABLE} WHERE id = ?`;
+  const [result] = await sqlPool.execute(query, [eventId]);
+  return result.affectedRows > 0;
 };
 
 /**
@@ -65,6 +77,7 @@ exports.deleteEvent = async (eventId, sqlPool) => {
  * @returns {Promise<boolean>} True if registration was successful.
  */
 exports.registerForEvent = async (eventId, userId, sqlPool) => {
-  // Placeholder: Logic to register a user for an event.
-  return true;
+  const query = `INSERT INTO ${EVENT_PARTICIPANT_TABLE} (user_id, event_id) VALUES (?, ?)`;
+  const [result] = await sqlPool.execute(query, [userId, eventId]);
+  return result.affectedRows > 0;
 };

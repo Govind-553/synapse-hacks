@@ -1,3 +1,5 @@
+const teamsService = require('../services/teams_service');
+
 /**
  * Fetches teams for a specific event.
  * @param {object} req - The request object.
@@ -5,8 +7,12 @@
  * @param {object} sqlPool - The MySQL connection pool.
  */
 exports.getTeamsByEvent = async (req, res, sqlPool) => {
-  // Placeholder: Logic to fetch teams for a specific event.
-  res.status(200).json([]);
+  try {
+    const teams = await teamsService.getTeamsByEvent(req.params.eventId, sqlPool);
+    res.status(200).json(teams);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching teams.' });
+  }
 };
 
 /**
@@ -16,8 +22,12 @@ exports.getTeamsByEvent = async (req, res, sqlPool) => {
  * @param {object} sqlPool - The MySQL connection pool.
  */
 exports.createTeam = async (req, res, sqlPool) => {
-  // Placeholder: Logic to create a new team.
-  res.status(201).json({ message: 'Team created successfully' });
+  try {
+    const team = await teamsService.createTeam(req.body, sqlPool);
+    res.status(201).json({ message: 'Team created successfully', team });
+  } catch (error) {
+    res.status(500).json({ message: 'Error creating team.' });
+  }
 };
 
 /**
@@ -27,6 +37,15 @@ exports.createTeam = async (req, res, sqlPool) => {
  * @param {object} sqlPool - The MySQL connection pool.
  */
 exports.inviteTeamMember = async (req, res, sqlPool) => {
-  // Placeholder: Logic to invite a new member to a team.
-  res.status(200).json({ message: 'Invitation sent' });
+  try {
+    const { userId } = req.body;
+    const teamId = req.params.teamId;
+    const success = await teamsService.inviteTeamMember(teamId, userId, sqlPool);
+    if (!success) {
+      return res.status(400).json({ message: 'Failed to invite team member.' });
+    }
+    res.status(200).json({ message: 'Invitation sent' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error inviting team member.' });
+  }
 };

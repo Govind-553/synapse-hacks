@@ -1,15 +1,18 @@
-/**
- * @fileoverview Certificates controller for handling certificate-related API requests.
- */
+const certificatesService = require('../services/certificates_service');
 
 /**
  * Fetches all certificates for a specific user.
  * @param {object} req - The request object.
  * @param {object} res - The response object.
  */
-exports.getUserCertificates = async (req, res) => {
-  // Placeholder: Logic to fetch certificates for a specific user from the database.
-  res.status(200).json([]);
+exports.getUserCertificates = async (req, res, sqlPool) => {
+  try {
+    const { userId } = req.params;
+    const certificates = await certificatesService.getUserCertificates(userId, sqlPool);
+    res.status(200).json(certificates);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching certificates.' });
+  }
 };
 
 /**
@@ -18,8 +21,13 @@ exports.getUserCertificates = async (req, res) => {
  * @param {object} res - The response object.
  */
 exports.downloadCertificate = async (req, res) => {
-  // Placeholder: Logic to find and serve a certificate file.
-  res.status(200).json({ message: 'Certificate download link' });
+  try {
+    const { id } = req.params;
+    const filePath = await certificatesService.downloadCertificate(id, res);
+    res.status(200).download(filePath);
+  } catch (error) {
+    res.status(500).json({ message: 'Error downloading certificate.' });
+  }
 };
 
 /**
@@ -27,7 +35,13 @@ exports.downloadCertificate = async (req, res) => {
  * @param {object} req - The request object.
  * @param {object} res - The response object.
  */
-exports.generateCertificate = async (req, res) => {
-  // Placeholder: Logic to generate and store a new certificate for an event winner/participant.
-  res.status(201).json({ message: 'Certificate generation initiated' });
+exports.generateCertificate = async (req, res, sqlPool) => {
+  try {
+    const { userId, achievement } = req.body;
+    const { eventId } = req.params;
+    const certificate = await certificatesService.generateCertificate(userId, eventId, achievement, sqlPool);
+    res.status(201).json({ message: 'Certificate generation initiated', certificate });
+  } catch (error) {
+    res.status(500).json({ message: 'Error generating certificate.' });
+  }
 };

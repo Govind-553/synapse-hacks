@@ -1,12 +1,18 @@
+const eventsService = require('../services/events_service');
+
 /**
- * Fetches all events from the database.
+ * Fetches all events.
  * @param {object} req - The request object.
  * @param {object} res - The response object.
  * @param {object} sqlPool - The MySQL connection pool.
  */
 exports.getEvents = async (req, res, sqlPool) => {
-  // Placeholder: Logic to fetch all events from the database.
-  res.status(200).json([]);
+  try {
+    const events = await eventsService.getAllEvents(sqlPool);
+    res.status(200).json(events);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching events.' });
+  }
 };
 
 /**
@@ -16,8 +22,15 @@ exports.getEvents = async (req, res, sqlPool) => {
  * @param {object} sqlPool - The MySQL connection pool.
  */
 exports.getEventById = async (req, res, sqlPool) => {
-  // Placeholder: Logic to fetch a single event by ID.
-  res.status(200).json({});
+  try {
+    const event = await eventsService.getEventById(req.params.id, sqlPool);
+    if (!event) {
+      return res.status(404).json({ message: 'Event not found.' });
+    }
+    res.status(200).json(event);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching event.' });
+  }
 };
 
 /**
@@ -27,8 +40,12 @@ exports.getEventById = async (req, res, sqlPool) => {
  * @param {object} sqlPool - The MySQL connection pool.
  */
 exports.createEvent = async (req, res, sqlPool) => {
-  // Placeholder: Logic to create a new event.
-  res.status(201).json({ message: 'Event created successfully' });
+  try {
+    const event = await eventsService.createEvent(req.body, sqlPool);
+    res.status(201).json({ message: 'Event created successfully', event });
+  } catch (error) {
+    res.status(500).json({ message: 'Error creating event.' });
+  }
 };
 
 /**
@@ -38,8 +55,13 @@ exports.createEvent = async (req, res, sqlPool) => {
  * @param {object} sqlPool - The MySQL connection pool.
  */
 exports.updateEvent = async (req, res, sqlPool) => {
-  // Placeholder: Logic to update an existing event.
-  res.status(200).json({ message: 'Event updated successfully' });
+  try {
+    const eventId = req.params.id;
+    const event = await eventsService.updateEvent(eventId, req.body, sqlPool);
+    res.status(200).json({ message: 'Event updated successfully', event });
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating event.' });
+  }
 };
 
 /**
@@ -49,8 +71,15 @@ exports.updateEvent = async (req, res, sqlPool) => {
  * @param {object} sqlPool - The MySQL connection pool.
  */
 exports.deleteEvent = async (req, res, sqlPool) => {
-  // Placeholder: Logic to delete an event.
-  res.status(200).json({ message: 'Event deleted successfully' });
+  try {
+    const success = await eventsService.deleteEvent(req.params.id, sqlPool);
+    if (!success) {
+      return res.status(404).json({ message: 'Event not found.' });
+    }
+    res.status(200).json({ message: 'Event deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error deleting event.' });
+  }
 };
 
 /**
@@ -60,6 +89,15 @@ exports.deleteEvent = async (req, res, sqlPool) => {
  * @param {object} sqlPool - The MySQL connection pool.
  */
 exports.registerForEvent = async (req, res, sqlPool) => {
-  // Placeholder: Logic for a participant to register for an event.
-  res.status(200).json({ message: 'Successfully registered for the event' });
+  try {
+    const { userId } = req.body; // Assuming userId is passed in the body
+    const eventId = req.params.id;
+    const success = await eventsService.registerForEvent(eventId, userId, sqlPool);
+    if (!success) {
+      return res.status(400).json({ message: 'Failed to register for event.' });
+    }
+    res.status(200).json({ message: 'Successfully registered for the event' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error registering for event.' });
+  }
 };

@@ -1,8 +1,9 @@
 /**
  * @fileoverview Service for handling authentication logic.
  */
-const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const { USER_TABLE } = require('../models/user_model');
 
 /**
  * Registers a new user.
@@ -11,12 +12,19 @@ const bcrypt = require('bcryptjs');
  * @returns {Promise<object>} The new user object and a JWT token.
  */
 exports.register = async (userData, sqlPool) => {
-  // Placeholder: Logic to hash password and insert user into Users table.
-  const hashedPassword = await bcrypt.hash(userData.password, 10);
-  const user = { ...userData, password_hash: hashedPassword };
-  // Perform database insertion here.
-  const token = jwt.sign({ id: 1, role: user.role }, process.env.JWT_SECRET);
-  return { user, token };
+  const { name, email, password, role } = userData;
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  const query = `INSERT INTO ${USER_TABLE} (name, email, password_hash, role) VALUES (?, ?, ?, ?)`;
+  const values = [name, email, hashedPassword, role];
+  
+  await sqlPool.execute(query, values);
+  const [rows] = await sqlPool.execute(`SELECT id FROM ${USER_TABLE} WHERE email = ?`, [email]);
+  const user = rows[0];
+
+  const token = jwt.sign({ id: user.id, role: role }, process.env.JWT_SECRET, { expiresIn: '1h' });
+  
+  return { user: { id: user.id, name, email, role }, token };
 };
 
 /**
@@ -27,12 +35,17 @@ exports.register = async (userData, sqlPool) => {
  * @returns {Promise<object>} The user object and a JWT token, or null if authentication fails.
  */
 exports.login = async (email, password, sqlPool) => {
-  // Placeholder: Logic to fetch user by email and compare passwords.
-  const user = { id: 1, email, role: 'participant', password_hash: 'hashed_password' }; // Mock user
+  const [rows] = await sqlPool.execute(`SELECT id, email, password_hash, role FROM ${USER_TABLE} WHERE email = ?`, [email]);
+  const user = rows[0];
+
+  if (!user) return null;
+
   const isMatch = await bcrypt.compare(password, user.password_hash);
   if (!isMatch) return null;
-  const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET);
-  return { user, token };
+
+  const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
+  
+  return { user: { id: user.id, email, role: user.role }, token };
 };
 
 /**
@@ -42,10 +55,21 @@ exports.login = async (email, password, sqlPool) => {
  * @returns {Promise<object>} The user object and a JWT token.
  */
 exports.googleLogin = async (googleData, sqlPool) => {
-  // Placeholder: Logic to find or create user via Google ID.
-  const user = { id: 2, email: 'google@example.com', role: 'participant' };
-  const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET);
-  return { user, token };
+  // Placeholder: In a real app, you would verify the Google token first.
+  const { id, email, name, role } = googleData;
+  const [rows] = await sqlPool.execute(`SELECT id, role FROM ${USER_TABLE} WHERE google_id = ?`, [id]);
+  let user = rows[0];
+
+  if (!user) {
+    // If user doesn't exist, create a new one.
+    const query = `INSERT INTO ${USER_TABLE} (name, email, google_id, role) VALUES (?, ?, ?, ?)`;
+    const [result] = await sqlPool.execute(query, [name, email, id, role || 'participant']);
+    user = { id: result.insertId, role: role || 'participant' };
+  }
+
+  const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
+  
+  return { user: { id: user.id, email, role: user.role }, token };
 };
 
 /**
@@ -55,8 +79,19 @@ exports.googleLogin = async (googleData, sqlPool) => {
  * @returns {Promise<object>} The user object and a JWT token.
  */
 exports.githubLogin = async (githubData, sqlPool) => {
-  // Placeholder: Logic to find or create user via GitHub ID.
-  const user = { id: 3, email: 'github@example.com', role: 'participant' };
-  const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET);
-  return { user, token };
+  // Placeholder: In a real app, you would verify the GitHub token first.
+  const { id, email, name, role } = githubData;
+  const [rows] = await sqlPool.execute(`SELECT id, role FROM ${USER_TABLE} WHERE github_id = ?`, [id]);
+  let user = rows[0];
+
+  if (!user) {
+    // If user doesn't exist, create a new one.
+    const query = `INSERT INTO ${USER_TABLE} (name, email, github_id, role) VALUES (?, ?, ?, ?)`;
+    const [result] = await sqlPool.execute(query, [name, email, id, role || 'participant']);
+    user = { id: result.insertId, role: role || 'participant' };
+  }
+
+  const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
+  
+  return { user: { id: user.id, email, role: user.role }, token };
 };

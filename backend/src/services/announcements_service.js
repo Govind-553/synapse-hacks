@@ -9,8 +9,8 @@ const { AnnouncementModel } = require('../models/announcement_model');
  * @returns {Promise<Array<object>>} An array of announcement objects.
  */
 exports.getAnnouncements = async (eventId) => {
-  // Placeholder: Logic to fetch announcements from MongoDB.
-  return [];
+  const announcements = await AnnouncementModel.find({ event_id: eventId });
+  return announcements;
 };
 
 /**
@@ -19,7 +19,6 @@ exports.getAnnouncements = async (eventId) => {
  * @returns {Promise<object>} The newly created announcement object.
  */
 exports.createAnnouncement = async (announcementData) => {
-  // Placeholder: Logic to save a new announcement to MongoDB.
   const newAnnouncement = new AnnouncementModel(announcementData);
   await newAnnouncement.save();
   return newAnnouncement;

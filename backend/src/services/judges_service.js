@@ -1,6 +1,10 @@
 /**
  * @fileoverview Service for handling judge-related business logic.
  */
+const { JUDGE_ASSIGNMENT_TABLE } = require('../models/judge_assignment_model');
+const { REVIEW_TABLE } = require('../models/review_model');
+const { SubmissionModel } = require('../models/submission_model');
+const { EVENT_TABLE } = require('../models/event_model');
 
 /**
  * Gets all events assigned to a specific judge.
@@ -9,8 +13,13 @@
  * @returns {Promise<Array<object>>} An array of event objects.
  */
 exports.getAssignedEvents = async (judgeId, sqlPool) => {
-  // Placeholder: Logic to fetch events from the database based on judge assignment.
-  return [];
+  const query = `
+    SELECT e.* FROM ${JUDGE_ASSIGNMENT_TABLE} ja
+    JOIN ${EVENT_TABLE} e ON ja.event_id = e.id
+    WHERE ja.judge_id = ?
+  `;
+  const [rows] = await sqlPool.execute(query, [judgeId]);
+  return rows;
 };
 
 /**
@@ -21,19 +30,40 @@ exports.getAssignedEvents = async (judgeId, sqlPool) => {
  * @returns {Promise<Array<object>>} An array of submission objects.
  */
 exports.getSubmissionsToReview = async (eventId, judgeId, sqlPool) => {
-  // Placeholder: Logic to fetch submissions that have not been reviewed by the judge.
-  return [];
+  // Logic to get all submissions for an event that the judge hasn't reviewed yet.
+  // This is a complex query that first gets all submissions for an event,
+  // then checks which ones already have a review from this specific judge.
+  const submissions = await SubmissionModel.find({ event_id: eventId });
+  const [reviewed] = await sqlPool.execute(
+    `SELECT submission_id FROM ${REVIEW_TABLE} WHERE judge_id = ?`,
+    [judgeId]
+  );
+  const reviewedIds = new Set(reviewed.map(row => row.submission_id));
+
+  // Filter out submissions that have already been reviewed by this judge.
+  return submissions.filter(sub => !reviewedIds.has(sub.id));
 };
 
 /**
  * Submits a review for a specific submission.
- * @param {number} submissionId - The ID of the submission.
+ * @param {string} submissionId - The ID of the submission.
  * @param {number} judgeId - The ID of the judge.
  * @param {object} reviewData - The review data including scores and comments.
  * @param {object} sqlPool - The MySQL connection pool.
  * @returns {Promise<boolean>} True if the review was submitted successfully.
  */
 exports.submitReview = async (submissionId, judgeId, reviewData, sqlPool) => {
-  // Placeholder: Logic to insert the review data into the Reviews table.
-  return true;
+  const { innovation, functionality, design, scalability, presentation, comments } = reviewData;
+  const query = `
+    INSERT INTO ${REVIEW_TABLE} (submission_id, judge_id, innovation, functionality, design, scalability, presentation, comments)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+  const values = [submissionId, judgeId, innovation, functionality, design, scalability, presentation, comments];
+  const [result] = await sqlPool.execute(query, values);
+
+  // Update the total score on the MongoDB submission document
+  const totalScore = innovation + functionality + design + scalability + presentation;
+  await SubmissionModel.findByIdAndUpdate(submissionId, { total_score: totalScore });
+
+  return result.affectedRows > 0;
 };

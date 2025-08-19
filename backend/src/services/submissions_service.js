@@ -9,7 +9,6 @@ const { SubmissionModel } = require('../models/submission_model');
  * @returns {Promise<object>} The newly created submission object.
  */
 exports.submitProject = async (submissionData) => {
-  // Placeholder: Logic to save a new submission to MongoDB.
   const newSubmission = new SubmissionModel(submissionData);
   await newSubmission.save();
   return newSubmission;
@@ -21,8 +20,8 @@ exports.submitProject = async (submissionData) => {
  * @returns {Promise<object>} The submission object.
  */
 exports.getSubmission = async (submissionId) => {
-  // Placeholder: Logic to fetch a submission from MongoDB.
-  return {};
+  const submission = await SubmissionModel.findById(submissionId);
+  return submission;
 };
 
 /**
@@ -32,8 +31,8 @@ exports.getSubmission = async (submissionId) => {
  * @returns {Promise<object>} The updated submission object.
  */
 exports.updateSubmission = async (submissionId, updateData) => {
-  // Placeholder: Logic to find and update a submission in MongoDB.
-  return {};
+  const updatedSubmission = await SubmissionModel.findByIdAndUpdate(submissionId, updateData, { new: true });
+  return updatedSubmission;
 };
 
 /**
@@ -42,6 +41,6 @@ exports.updateSubmission = async (submissionId, updateData) => {
  * @returns {Promise<boolean>} True if the submission was deleted, false otherwise.
  */
 exports.deleteSubmission = async (submissionId) => {
-  // Placeholder: Logic to find and delete a submission from MongoDB.
-  return true;
+  const result = await SubmissionModel.findByIdAndDelete(submissionId);
+  return result !== null;
 };

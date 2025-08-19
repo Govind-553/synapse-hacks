@@ -1,13 +1,5 @@
-const jwt = require('jsonwebtoken');
-
-/**
- * Generates a JWT token for a user.
- * @param {object} user - The user object containing id and role.
- * @returns {string} The JWT token.
- */
-const generateToken = (user) => {
-  return jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
-};
+const authService = require('../services/auth_service');
+const { USER_ROLES } = require('../models/sql-schemas');
 
 /**
  * Registers a new user.
@@ -16,10 +8,16 @@ const generateToken = (user) => {
  * @param {object} sqlPool - The MySQL connection pool.
  */
 exports.register = async (req, res, sqlPool) => {
-  // Placeholder: Logic to register a user with role and save to the database.
-  // Use sqlPool.execute to run queries.
-  // Then, return a JWT token.
-  res.status(201).json({ message: 'User registered successfully', token: 'mock-token' });
+  try {
+    const { name, email, password, role } = req.body;
+    if (!name || !email || !password || !role) {
+      return res.status(400).json({ message: 'All fields are required.' });
+    }
+    const { user, token } = await authService.register({ name, email, password, role }, sqlPool);
+    res.status(201).json({ user, token });
+  } catch (error) {
+    res.status(500).json({ message: 'Error registering user.' });
+  }
 };
 
 /**
@@ -29,10 +27,20 @@ exports.register = async (req, res, sqlPool) => {
  * @param {object} sqlPool - The MySQL connection pool.
  */
 exports.login = async (req, res, sqlPool) => {
-  // Placeholder: Logic to authenticate a user.
-  // Use sqlPool.execute to query the user.
-  // If successful, return a JWT token.
-  res.status(200).json({ message: 'Login successful', token: 'mock-token' });
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password are required.' });
+    }
+    const result = await authService.login(email, password, sqlPool);
+    if (!result) {
+      return res.status(401).json({ message: 'Invalid credentials.' });
+    }
+    const { user, token } = result;
+    res.status(200).json({ user, token });
+  } catch (error) {
+    res.status(500).json({ message: 'Error logging in.' });
+  }
 };
 
 /**
@@ -42,10 +50,18 @@ exports.login = async (req, res, sqlPool) => {
  * @param {object} sqlPool - The MySQL connection pool.
  */
 exports.googleLogin = async (req, res, sqlPool) => {
-  // Placeholder: Logic for Google OAuth authentication.
-  // Validate token, get user data, check if user exists in DB.
-  // If not, register them. Then return a JWT token.
-  res.status(200).json({ message: 'Google login successful', token: 'mock-token' });
+  try {
+    const { id_token, role } = req.body;
+    if (!id_token) {
+      return res.status(400).json({ message: 'Google ID token is required.' });
+    }
+    // In a real app, you'd use the ID token to get user info from Google's API.
+    const googleData = { id: id_token, email: 'google@example.com', name: 'Google User', role: role || USER_ROLES.PARTICIPANT };
+    const { user, token } = await authService.googleLogin(googleData, sqlPool);
+    res.status(200).json({ user, token });
+  } catch (error) {
+    res.status(500).json({ message: 'Error with Google login.' });
+  }
 };
 
 /**
@@ -55,8 +71,16 @@ exports.googleLogin = async (req, res, sqlPool) => {
  * @param {object} sqlPool - The MySQL connection pool.
  */
 exports.githubLogin = async (req, res, sqlPool) => {
-  // Placeholder: Logic for GitHub OAuth authentication.
-  // Validate token, get user data, check if user exists in DB.
-  // If not, register them. Then return a JWT token.
-  res.status(200).json({ message: 'GitHub login successful', token: 'mock-token' });
+  try {
+    const { code, role } = req.body;
+    if (!code) {
+      return res.status(400).json({ message: 'GitHub authorization code is required.' });
+    }
+    // In a real app, you'd use the code to get an access token and user info from GitHub's API.
+    const githubData = { id: code, email: 'github@example.com', name: 'GitHub User', role: role || USER_ROLES.PARTICIPANT };
+    const { user, token } = await authService.githubLogin(githubData, sqlPool);
+    res.status(200).json({ user, token });
+  } catch (error) {
+    res.status(500).json({ message: 'Error with GitHub login.' });
+  }
 };

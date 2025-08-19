@@ -1,6 +1,4 @@
-/**
- * @fileoverview Announcements controller for handling announcement-related API requests.
- */
+const announcementsService = require('../services/announcements_service');
 
 /**
  * Fetches announcements for a specific event from MongoDB.
@@ -8,8 +6,12 @@
  * @param {object} res - The response object.
  */
 exports.getAnnouncements = async (req, res) => {
-  // Placeholder: Logic to fetch announcements from MongoDB.
-  res.status(200).json([]);
+  try {
+    const announcements = await announcementsService.getAnnouncements(req.params.eventId);
+    res.status(200).json(announcements);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching announcements.' });
+  }
 };
 
 /**
@@ -19,7 +21,12 @@ exports.getAnnouncements = async (req, res) => {
  * @param {object} io - The Socket.io instance.
  */
 exports.createAnnouncement = async (req, res, io) => {
-  // Placeholder: Logic to create a new announcement in MongoDB and emit a real-time event.
-  io.emit('newAnnouncement', { message: 'New announcement created!' });
-  res.status(201).json({ message: 'Announcement created successfully' });
+  try {
+    const announcement = await announcementsService.createAnnouncement(req.body);
+    // Broadcast the new announcement to all connected clients
+    io.to(`event-${announcement.event_id}`).emit('newAnnouncement', announcement);
+    res.status(201).json({ message: 'Announcement created successfully', announcement });
+  } catch (error) {
+    res.status(500).json({ message: 'Error creating announcement.' });
+  }
 };
