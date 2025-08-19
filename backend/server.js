@@ -50,7 +50,7 @@ app.use('/api/submissions', submissionRoutes);
 app.use('/api/judges', judgeRoutes(sqlPool));
 app.use('/api/announcements', announcementRoutes(io)); 
 app.use('/api/leaderboard', leaderboardRoutes(sqlPool));
-app.use('/api/certificates', certificatesRoutes(sqlPool));
+app.use('/api/certificates', certificatesRoutes());
 
 // Socket.io for real-time updates
 io.on('connection', (socket) => {
