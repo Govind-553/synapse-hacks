@@ -30,7 +30,7 @@ It provides a robust, role-based ecosystem for organizers, participants, and jud
 
 ---    
 
-## Tech Stack
+## 🛠️ Tech Stack
 - The platform is built with a modern, full-stack architecture.
 
 - **Frontend:** React, TypeScript, Tailwind CSS, Shadcn/UI, React Router Dom
