@@ -139,5 +139,5 @@ It provides a robust, role-based ecosystem for organizers, participants, and jud
 
 --- 
 
-## A Special Note for the Judges
-Thank you for taking the time to evaluate our project. We have built this platform to address the core requirements of the SynapHack 3.0 problem statement. We've focused on creating a functional and user-friendly experience for all roles. We appreciate your feedback and hope our solution meets your expectations.
+## A Special Note for the Judges 🏆
+Thank you for taking the time to evaluate our project. We have built this platform to address the core requirements of the SynapHack 3.0 problem statement. We've focused on creating a functional and user-friendly experience for all roles. We appreciate your feedback and hope our solution meets your expectations. 🙏
