@@ -1,6 +1,5 @@
 import ParticipantDashboard from "@/components/dashboards/ParticipantDashboard";
 import Navigation from "@/components/Navigation";
-import Footer from "@/components/Footer";
 
 interface DashboardPageProps {
   user: any;
@@ -14,7 +13,6 @@ const ParticipantDashboardPage: React.FC<DashboardPageProps> = ({ user, token })
       <main className="pt-16">
         <ParticipantDashboard user={user} token={token} />
       </main>
-      <Footer />
     </div>
   );
 };

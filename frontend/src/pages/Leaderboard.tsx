@@ -14,7 +14,6 @@ const Leaderboard: React.FC<PageProps> = ({ user, token }) => {
       <main className="pt-16">
         <LeaderboardPage user={user} token={token} />
       </main>
-      <Footer />
     </div>
   );
 };

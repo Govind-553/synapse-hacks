@@ -1,6 +1,5 @@
 import CertificatesPage from "@/components/CertificatesPage";
 import Navigation from "@/components/Navigation";
-import Footer from "@/components/Footer";
 
 interface PageProps {
   user: any;
@@ -14,7 +13,6 @@ const Certificates: React.FC<PageProps> = ({ user, token }) => {
       <main className="pt-16">
         <CertificatesPage user={user} token={token} />
       </main>
-      <Footer />
     </div>
   );
 };

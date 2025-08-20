@@ -1,6 +1,5 @@
 import OrganizerDashboard from "@/components/dashboards/OrganizerDashboard";
 import Navigation from "@/components/Navigation";
-import Footer from "@/components/Footer";
 
 interface DashboardPageProps {
   user: any;
@@ -14,7 +13,6 @@ const OrganizerDashboardPage: React.FC<DashboardPageProps> = ({ user, token }) =
       <main className="pt-16">
         <OrganizerDashboard user={user} token={token} />
       </main>
-      <Footer />
     </div>
   );
 };

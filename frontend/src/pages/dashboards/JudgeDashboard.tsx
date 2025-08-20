@@ -1,6 +1,5 @@
 import JudgeDashboard from "@/components/dashboards/JudgeDashboard";
 import Navigation from "@/components/Navigation";
-import Footer from "@/components/Footer";
 
 interface DashboardPageProps {
   user: any;
@@ -14,7 +13,6 @@ const JudgeDashboardPage: React.FC<DashboardPageProps> = ({ user, token }) => {
       <main className="pt-16">
         <JudgeDashboard user={user} token={token} />
       </main>
-      <Footer />
     </div>
   );
 };

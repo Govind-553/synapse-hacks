@@ -1,15 +1,18 @@
-import EventsShowcase from "@/components/EventsShowcase";
-import Navigation from "@/components/Navigation";
-import Footer from "@/components/Footer";
+import EventsShowcase from "../components/EventsShowcase";
+import Navigation from "../components/Navigation";
 
-const EventsPage = () => {
+interface PageProps {
+  user: any;
+  token: string | null;
+}
+
+const EventsPage: React.FC<PageProps> = ({ user, token }) => {
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
+      <Navigation user={user} logout={() => {}} />
       <main className="pt-16">
         <EventsShowcase />
       </main>
-      <Footer />
     </div>
   );
 };

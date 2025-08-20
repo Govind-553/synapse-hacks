@@ -16,19 +16,19 @@ const DashboardLinks = () => {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
         <Button variant="hero" size="xl" asChild>
-          <Link to="/dashboard/participant">
+          <Link to="/login">
             <Users className="w-6 h-6 mr-3" />
             Participant
           </Link>
         </Button>
         <Button variant="hero" size="xl" asChild>
-          <Link to="/dashboard/judge">
+          <Link to="/login">
             <Gavel className="w-6 h-6 mr-3" />
             Judge
           </Link>
         </Button>
         <Button variant="hero" size="xl" asChild>
-          <Link to="/dashboard/organizer">
+          <Link to="/login">
             <Trophy className="w-6 h-6 mr-3" />
             Organizer
           </Link>

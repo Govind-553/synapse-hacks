@@ -1,15 +1,18 @@
 import AboutPage from "@/components/AboutPage";
 import Navigation from "@/components/Navigation";
-import Footer from "@/components/Footer";
 
-const About = () => {
+interface PageProps {
+  user: any;
+  token: string | null;
+}
+
+const About: React.FC<PageProps> = ({ user, token }) => {
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
+      <Navigation user={user} logout={() => {}} />
       <main className="pt-16">
         <AboutPage />
       </main>
-      <Footer />
     </div>
   );
 };
