@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "@/components/ui/use-toast";
 import { 
   Plus, 
   Calendar, 
@@ -20,6 +21,8 @@ import {
   Trash2,
   Send
 } from "lucide-react";
+import { Bar, BarChart, CartesianGrid, LabelList, Pie, PieChart, Cell, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
 // Add an interface to define the props that the component expects
 interface OrganizerDashboardProps {
@@ -27,12 +30,35 @@ interface OrganizerDashboardProps {
   token: string | null;
 }
 
+const API_BASE_URL = "https://synapse-hacks-api.onrender.com/api";
+
 // Update the component signature to accept the defined props
 const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({ user, token }) => {
   const [selectedTab, setSelectedTab] = useState("create");
+  const [useStaticData, setUseStaticData] = useState(true);
+  const [myEvents, setMyEvents] = useState([]);
+  const [eventFormData, setEventFormData] = useState({
+    title: "",
+    theme: "",
+    start_date: "",
+    end_date: "",
+    type: "",
+    location: "",
+    prize_pool: "",
+    max_participants: "",
+    description: "",
+    rules: ""
+  });
+  const [announcementFormData, setAnnouncementFormData] = useState({
+    eventId: "",
+    title: "",
+    message: "",
+    priority: "low"
+  });
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Sample data
-  const myEvents = [
+  // Static data as requested to be kept
+  const staticEvents = [
     {
       id: 1,
       title: "AI Innovation Challenge",
@@ -40,7 +66,8 @@ const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({ user, token }) 
       status: "upcoming",
       participants: 127,
       submissions: 0,
-      prize: "$25,000"
+      prize: "$25,000",
+      type: "Online"
     },
     {
       id: 2,
@@ -49,9 +76,153 @@ const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({ user, token }) 
       status: "completed",
       participants: 89,
       submissions: 42,
-      prize: "$15,000"
+      prize: "$15,000",
+      type: "Online"
     }
   ];
+
+  const staticAnnouncements = [
+    {
+      id: 1,
+      title: "Round 2 Begins!",
+      message: "The second round of judging starts in 30 minutes. Make sure your submissions are ready!",
+      priority: "high",
+      timestamp: "2 hours ago"
+    },
+    {
+      id: 2,
+      title: "Mentor Sessions Available",
+      message: "Book 1-on-1 sessions with industry experts.",
+      priority: "medium",
+      timestamp: "yesterday"
+    }
+  ];
+
+  const staticAnalytics = {
+    totalParticipants: "1,247",
+    eventsHosted: "15",
+    completionRate: "89%",
+    totalPrizes: "$125K"
+  };
+
+  useEffect(() => {
+    if (useStaticData) {
+      setMyEvents(staticEvents);
+      return;
+    }
+
+    const fetchEvents = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch(`${API_BASE_URL}/events`, {
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        });
+        if (!response.ok) {
+          throw new Error("Failed to fetch events.");
+        }
+        const data = await response.json();
+        // Filter events by organizer ID if the user is an organizer
+        const organizerEvents = data.filter(event => event.organizer_id === user.id);
+        setMyEvents(organizerEvents);
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (user && token) {
+      fetchEvents();
+    }
+  }, [user, token, useStaticData]);
+
+  const handleEventFormChange = (field, value) => {
+    setEventFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleAnnouncementFormChange = (field, value) => {
+    setAnnouncementFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleCreateEvent = async () => {
+    if (!token) {
+      toast({ title: "Error", description: "You must be logged in to create an event.", variant: "destructive" });
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/events`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ ...eventFormData, organizer_id: user.id })
+      });
+      if (!response.ok) {
+        throw new Error("Failed to create event.");
+      }
+      toast({ title: "Success", description: "Event created successfully." });
+      setEventFormData({
+        title: "",
+        theme: "",
+        start_date: "",
+        end_date: "",
+        type: "",
+        location: "",
+        prize_pool: "",
+        max_participants: "",
+        description: "",
+        rules: ""
+      });
+      // Optionally refresh the event list
+    } catch (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSendAnnouncement = async () => {
+    if (!token) {
+      toast({ title: "Error", description: "You must be logged in to send an announcement.", variant: "destructive" });
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/announcements`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(announcementFormData)
+      });
+      if (!response.ok) {
+        throw new Error("Failed to send announcement.");
+      }
+      toast({ title: "Success", description: "Announcement sent successfully." });
+      setAnnouncementFormData({
+        eventId: "",
+        title: "",
+        message: "",
+        priority: "low"
+      });
+      // Refresh the announcement list
+      setUseStaticData(false); // Switch to live data to see the new announcement
+    } catch (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
 
   const renderCreateEventTab = () => (
     <Card className="premium-card">
@@ -65,26 +236,44 @@ const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({ user, token }) 
         <div className="grid md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>Event Title</Label>
-            <Input placeholder="Enter event title" />
+            <Input 
+              placeholder="Enter event title"
+              value={eventFormData.title}
+              onChange={(e) => handleEventFormChange("title", e.target.value)}
+            />
           </div>
           <div className="space-y-2">
             <Label>Event Theme</Label>
-            <Input placeholder="e.g., AI/ML, Web3, Sustainability" />
+            <Input 
+              placeholder="e.g., AI/ML, Web3, Sustainability" 
+              value={eventFormData.theme}
+              onChange={(e) => handleEventFormChange("theme", e.target.value)}
+            />
           </div>
         </div>
 
         <div className="grid md:grid-cols-3 gap-4">
           <div className="space-y-2">
             <Label>Start Date</Label>
-            <Input type="date" />
+            <Input 
+              type="date" 
+              value={eventFormData.start_date}
+              onChange={(e) => handleEventFormChange("start_date", e.target.value)}
+            />
           </div>
           <div className="space-y-2">
             <Label>End Date</Label>
-            <Input type="date" />
+            <Input type="date" 
+              value={eventFormData.end_date}
+              onChange={(e) => handleEventFormChange("end_date", e.target.value)}
+            />
           </div>
           <div className="space-y-2">
             <Label>Event Type</Label>
-            <Select>
+            <Select 
+              value={eventFormData.type}
+              onValueChange={(value) => handleEventFormChange("type", value)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select type" />
               </SelectTrigger>
@@ -99,7 +288,11 @@ const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({ user, token }) 
 
         <div className="space-y-2">
           <Label>Location (if offline/hybrid)</Label>
-          <Input placeholder="Enter venue address" />
+          <Input 
+            placeholder="Enter venue address"
+            value={eventFormData.location}
+            onChange={(e) => handleEventFormChange("location", e.target.value)}
+          />
         </div>
 
         <div className="space-y-2">
@@ -107,6 +300,8 @@ const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({ user, token }) 
           <Textarea 
             placeholder="Describe your hackathon, rules, and expectations..."
             rows={4}
+            value={eventFormData.description}
+            onChange={(e) => handleEventFormChange("description", e.target.value)}
           />
         </div>
 
@@ -115,12 +310,22 @@ const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({ user, token }) 
             <Label>Prize Pool</Label>
             <div className="relative">
               <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="25000" className="pl-10" />
+              <Input 
+                placeholder="25000" 
+                className="pl-10" 
+                value={eventFormData.prize_pool}
+                onChange={(e) => handleEventFormChange("prize_pool", e.target.value)}
+              />
             </div>
           </div>
           <div className="space-y-2">
             <Label>Max Participants</Label>
-            <Input type="number" placeholder="500" />
+            <Input 
+              type="number" 
+              placeholder="500" 
+              value={eventFormData.max_participants}
+              onChange={(e) => handleEventFormChange("max_participants", e.target.value)}
+            />
           </div>
         </div>
 
@@ -138,8 +343,13 @@ const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({ user, token }) 
         </div>
 
         <div className="flex gap-4">
-          <Button variant="hero" className="flex-1">
-            Create Event
+          <Button 
+            variant="hero" 
+            className="flex-1"
+            onClick={handleCreateEvent}
+            disabled={isLoading}
+          >
+            {isLoading ? "Creating..." : "Create Event"}
           </Button>
           <Button variant="glass">
             Save as Draft
@@ -151,81 +361,88 @@ const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({ user, token }) 
 
   const renderManageEventsTab = () => (
     <div className="space-y-6">
-      {myEvents.map((event) => (
-        <Card key={event.id} className="premium-card">
-          <CardHeader className="pb-4">
-            <div className="flex justify-between items-start">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <CardTitle className="text-xl">{event.title}</CardTitle>
-                  <Badge 
-                    variant={event.status === "upcoming" ? "default" : "secondary"}
-                    className="capitalize"
-                  >
-                    {event.status}
-                  </Badge>
+      <Button onClick={() => setUseStaticData(!useStaticData)} className="mt-4">
+        {useStaticData ? "Switch to Live Data" : "Switch to Static Data"}
+      </Button>
+      {isLoading ? (
+        <div>Loading events...</div>
+      ) : (
+        myEvents.map((event) => (
+          <Card key={event.id} className="premium-card">
+            <CardHeader className="pb-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <CardTitle className="text-xl">{event.title}</CardTitle>
+                    <Badge 
+                      variant={event.status === "upcoming" ? "default" : "secondary"}
+                      className="capitalize"
+                    >
+                      {event.status}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <Calendar className="w-4 h-4" />
+                      {event.date || `${event.start_date} - ${event.end_date}`}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Users className="w-4 h-4" />
+                      {event.participants} participants
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Trophy className="w-4 h-4" />
+                      {event.prize || event.prize_pool}
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <Calendar className="w-4 h-4" />
-                    {event.date}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Users className="w-4 h-4" />
-                    {event.participants} participants
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Trophy className="w-4 h-4" />
-                    {event.prize}
-                  </div>
+                <div className="flex gap-2">
+                  <Button variant="glass" size="sm">
+                    <Eye className="w-4 h-4" />
+                  </Button>
+                  <Button variant="glass" size="sm">
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                  <Button variant="glass" size="sm">
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-4 gap-4 mb-4">
+                <div className="glass-card p-4 text-center">
+                  <div className="text-2xl font-bold text-gradient">{event.participants}</div>
+                  <div className="text-sm text-muted-foreground">Registered</div>
+                </div>
+                <div className="glass-card p-4 text-center">
+                  <div className="text-2xl font-bold text-gradient">{event.submissions}</div>
+                  <div className="text-sm text-muted-foreground">Submissions</div>
+                </div>
+                <div className="glass-card p-4 text-center">
+                  <div className="text-2xl font-bold text-gradient">12</div>
+                  <div className="text-sm text-muted-foreground">Teams</div>
+                </div>
+                <div className="glass-card p-4 text-center">
+                  <div className="text-2xl font-bold text-gradient">5</div>
+                  <div className="text-sm text-muted-foreground">Judges</div>
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button variant="glass" size="sm">
-                  <Eye className="w-4 h-4" />
+                <Button variant="hero" size="sm">
+                  View Details
                 </Button>
                 <Button variant="glass" size="sm">
-                  <Edit className="w-4 h-4" />
+                  Manage Participants
                 </Button>
                 <Button variant="glass" size="sm">
-                  <Trash2 className="w-4 h-4" />
+                  Send Announcement
                 </Button>
               </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-4 gap-4 mb-4">
-              <div className="glass-card p-4 text-center">
-                <div className="text-2xl font-bold text-gradient">{event.participants}</div>
-                <div className="text-sm text-muted-foreground">Registered</div>
-              </div>
-              <div className="glass-card p-4 text-center">
-                <div className="text-2xl font-bold text-gradient">{event.submissions}</div>
-                <div className="text-sm text-muted-foreground">Submissions</div>
-              </div>
-              <div className="glass-card p-4 text-center">
-                <div className="text-2xl font-bold text-gradient">12</div>
-                <div className="text-sm text-muted-foreground">Teams</div>
-              </div>
-              <div className="glass-card p-4 text-center">
-                <div className="text-2xl font-bold text-gradient">5</div>
-                <div className="text-sm text-muted-foreground">Judges</div>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="hero" size="sm">
-                View Details
-              </Button>
-              <Button variant="glass" size="sm">
-                Manage Participants
-              </Button>
-              <Button variant="glass" size="sm">
-                Send Announcement
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+            </CardContent>
+          </Card>
+        ))
+      )}
     </div>
   );
 
@@ -241,12 +458,15 @@ const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({ user, token }) 
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label>Select Event</Label>
-            <Select>
+            <Select 
+              value={announcementFormData.eventId} 
+              onValueChange={(value) => handleAnnouncementFormChange("eventId", value)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Choose event" />
               </SelectTrigger>
               <SelectContent>
-                {myEvents.filter(e => e.status === "upcoming").map(event => (
+                {myEvents.filter(e => e.status === "upcoming" || e.status === undefined).map(event => (
                   <SelectItem key={event.id} value={event.id.toString()}>
                     {event.title}
                   </SelectItem>
@@ -256,18 +476,27 @@ const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({ user, token }) 
           </div>
           <div className="space-y-2">
             <Label>Announcement Title</Label>
-            <Input placeholder="Enter announcement title" />
+            <Input 
+              placeholder="Enter announcement title" 
+              value={announcementFormData.title}
+              onChange={(e) => handleAnnouncementFormChange("title", e.target.value)}
+            />
           </div>
           <div className="space-y-2">
             <Label>Message</Label>
             <Textarea 
               placeholder="Type your announcement message..."
               rows={4}
+              value={announcementFormData.message}
+              onChange={(e) => handleAnnouncementFormChange("message", e.target.value)}
             />
           </div>
           <div className="space-y-2">
             <Label>Priority</Label>
-            <Select>
+            <Select 
+              value={announcementFormData.priority} 
+              onValueChange={(value) => handleAnnouncementFormChange("priority", value)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select priority" />
               </SelectTrigger>
@@ -279,9 +508,14 @@ const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({ user, token }) 
               </SelectContent>
             </Select>
           </div>
-          <Button variant="hero" className="w-full">
+          <Button 
+            variant="hero" 
+            className="w-full"
+            onClick={handleSendAnnouncement}
+            disabled={isLoading}
+          >
             <Send className="w-4 h-4 mr-2" />
-            Send Announcement
+            {isLoading ? "Sending..." : "Send Announcement"}
           </Button>
         </CardContent>
       </Card>
@@ -292,68 +526,173 @@ const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({ user, token }) 
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="glass-card p-4">
-              <div className="flex justify-between items-start mb-2">
-                <h4 className="font-medium">Round 2 Begins!</h4>
-                <Badge variant="default">High</Badge>
+            {staticAnnouncements.map(announcement => (
+              <div key={announcement.id} className="glass-card p-4">
+                <div className="flex justify-between items-start mb-2">
+                  <h4 className="font-medium">{announcement.title}</h4>
+                  <Badge variant="default">{announcement.priority}</Badge>
+                </div>
+                <p className="text-sm text-muted-foreground mb-2">
+                  {announcement.message}
+                </p>
+                <div className="text-xs text-muted-foreground">
+                  Sent {announcement.timestamp} • AI Innovation Challenge
+                </div>
               </div>
-              <p className="text-sm text-muted-foreground mb-2">
-                The second round of judging starts in 30 minutes. Make sure your submissions are ready!
-              </p>
-              <div className="text-xs text-muted-foreground">
-                Sent 2 hours ago • AI Innovation Challenge
-              </div>
-            </div>
-            <div className="glass-card p-4">
-              <div className="flex justify-between items-start mb-2">
-                <h4 className="font-medium">Mentor Sessions Available</h4>
-                <Badge variant="secondary">Medium</Badge>
-              </div>
-              <p className="text-sm text-muted-foreground mb-2">
-                Book 1-on-1 sessions with industry experts to get feedback on your projects.
-              </p>
-              <div className="text-xs text-muted-foreground">
-                Sent yesterday • AI Innovation Challenge
-              </div>
-            </div>
+            ))}
           </div>
         </CardContent>
       </Card>
     </div>
   );
 
+  const chartConfig = {
+    participants: {
+      label: "Participants",
+      color: "hsl(var(--primary))",
+    },
+    submissions: {
+      label: "Submissions",
+      color: "hsl(var(--secondary))",
+    },
+  };
+
+  const chartData = myEvents.map(event => ({
+    event: event.title,
+    participants: event.participants,
+    submissions: event.submissions
+  }));
+  
   const renderAnalyticsTab = () => (
     <div className="space-y-6">
       <div className="grid md:grid-cols-4 gap-4">
         <Card className="glass-card">
           <CardContent className="p-6 text-center">
             <Users className="w-8 h-8 mx-auto mb-2 text-primary" />
-            <div className="text-2xl font-bold text-gradient">1,247</div>
+            <div className="text-2xl font-bold text-gradient">{staticAnalytics.totalParticipants}</div>
             <div className="text-sm text-muted-foreground">Total Participants</div>
           </CardContent>
         </Card>
         <Card className="glass-card">
           <CardContent className="p-6 text-center">
             <Calendar className="w-8 h-8 mx-auto mb-2 text-green-500" />
-            <div className="text-2xl font-bold text-gradient">15</div>
+            <div className="text-2xl font-bold text-gradient">{staticAnalytics.eventsHosted}</div>
             <div className="text-sm text-muted-foreground">Events Hosted</div>
           </CardContent>
         </Card>
         <Card className="glass-card">
           <CardContent className="p-6 text-center">
             <Trophy className="w-8 h-8 mx-auto mb-2 text-yellow-500" />
-            <div className="text-2xl font-bold text-gradient">89%</div>
+            <div className="text-2xl font-bold text-gradient">{staticAnalytics.completionRate}</div>
             <div className="text-sm text-muted-foreground">Completion Rate</div>
           </CardContent>
         </Card>
         <Card className="glass-card">
           <CardContent className="p-6 text-center">
             <DollarSign className="w-8 h-8 mx-auto mb-2 text-purple-500" />
-            <div className="text-2xl font-bold text-gradient">$125K</div>
+            <div className="text-2xl font-bold text-gradient">{staticAnalytics.totalPrizes}</div>
             <div className="text-sm text-muted-foreground">Total Prizes</div>
           </CardContent>
         </Card>
       </div>
+
+      <Card className="premium-card">
+        <CardHeader>
+          <CardTitle>Event Overview</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ChartContainer config={chartConfig}>
+            <BarChart accessibilityLayer data={chartData} margin={{ top: 20 }}>
+              <CartesianGrid vertical={false} />
+              <XAxis
+                dataKey="event"
+                tickLine={false}
+                tickMargin={10}
+                axisLine={false}
+                tickFormatter={(value) => value.split(" ")[0]}
+              />
+              <YAxis />
+              <ChartTooltip
+                cursor={false}
+                content={<ChartTooltipContent indicator="dashed" />}
+              />
+              <Legend content={({ payload }) => (
+                <div className="flex justify-center pt-2 gap-4 text-sm">
+                  {payload.map((entry, index) => (
+                    <div key={`item-${index}`} className="flex items-center gap-2">
+                      <span
+                        className="h-2 w-2 rounded-full"
+                        style={{ backgroundColor: entry.color }}
+                      />
+                      <span>{entry.value}</span>
+                    </div>
+                  ))}
+                </div>
+              )}/>
+              <Bar
+                dataKey="participants"
+                name="Participants"
+                fill="hsl(var(--primary))"
+                radius={[4, 4, 0, 0]}
+              >
+                <LabelList
+                  dataKey="participants"
+                  position="top"
+                  offset={12}
+                  className="fill-foreground text-sm font-medium"
+                />
+              </Bar>
+              <Bar
+                dataKey="submissions"
+                name="Submissions"
+                fill="hsl(var(--secondary))"
+                radius={[4, 4, 0, 0]}
+              >
+                <LabelList
+                  dataKey="submissions"
+                  position="top"
+                  offset={12}
+                  className="fill-foreground text-sm font-medium"
+                />
+              </Bar>
+            </BarChart>
+          </ChartContainer>
+        </CardContent>
+      </Card>
+      <Card className="premium-card">
+        <CardHeader>
+          <CardTitle>Submissions Distribution</CardTitle>
+        </CardHeader>
+        <CardContent className="aspect-square p-20">
+          <ChartContainer
+            config={{
+              submissions: {
+                label: "Submissions",
+                color: "hsl(var(--secondary))",
+              },
+            }}
+            className="mx-auto"
+          >
+            <PieChart>
+              <Pie
+                data={chartData}
+                dataKey="submissions"
+                nameKey="event"
+                innerRadius={60}
+                outerRadius={80}
+                fill="var(--color-submissions)"
+                label
+              >
+                {chartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={['#8884d8', '#82ca9d', '#ffc658'][index % 3]} />
+                ))}
+              </Pie>
+              <Tooltip content={<ChartTooltipContent />} />
+              <Legend />
+            </PieChart>
+          </ChartContainer>
+        </CardContent>
+      </Card>
 
       <Card className="premium-card">
         <CardHeader>
@@ -380,7 +719,7 @@ const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({ user, token }) 
                   </div>
                   <div>
                     <span className="text-muted-foreground">Prize Pool:</span>
-                    <span className="ml-2 font-medium">{event.prize}</span>
+                    <span className="ml-2 font-medium">{event.prize || event.prize_pool}</span>
                   </div>
                 </div>
                 {event.status === "completed" && (

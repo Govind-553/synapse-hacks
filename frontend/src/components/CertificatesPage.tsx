@@ -1,22 +1,23 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { 
-  Download, 
-  Trophy, 
-  Star, 
-  Calendar, 
-  Award, 
-  Crown, 
-  Medal, 
+import {
+  Download,
+  Trophy,
+  Star,
+  Calendar,
+  Award,
+  Crown,
+  Medal,
   Eye,
   Share2,
   Search,
   Filter,
   ExternalLink
 } from "lucide-react";
+import { toast } from "@/components/ui/use-toast";
 
 // Add an interface to define the props
 interface CertificatesPageProps {
@@ -24,13 +25,18 @@ interface CertificatesPageProps {
   token: string | null;
 }
 
+const API_BASE_URL = "https://synapse-hacks-api.onrender.com/api";
+
 // Update the component to accept the props
 const CertificatesPage: React.FC<CertificatesPageProps> = ({ user, token }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCertificate, setSelectedCertificate] = useState(null);
+  const [certificates, setCertificates] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [useStaticData, setUseStaticData] = useState(true);
 
   // Sample certificates data
-  const certificates = [
+  const staticCertificates = [
     {
       id: 1,
       eventName: "AI Innovation Challenge",
@@ -97,6 +103,43 @@ const CertificatesPage: React.FC<CertificatesPageProps> = ({ user, token }) => {
     }
   ];
 
+  useEffect(() => {
+    if (useStaticData) {
+      setCertificates(staticCertificates);
+      return;
+    }
+
+    const fetchCertificates = async () => {
+      if (!user || !token) return;
+
+      setIsLoading(true);
+      try {
+        const response = await fetch(`${API_BASE_URL}/certificates/${user.id}`, {
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch certificates.");
+        }
+
+        const data = await response.json();
+        setCertificates(data);
+      } catch (error) {
+        toast({
+          title: "Error fetching certificates",
+          description: error.message,
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCertificates();
+  }, [user, token, useStaticData]);
+
   const getAchievementIcon = (icon, position) => {
     switch (icon) {
       case "crown":
@@ -111,7 +154,7 @@ const CertificatesPage: React.FC<CertificatesPageProps> = ({ user, token }) => {
   };
 
   const getAchievementColor = (achievement) => {
-    switch (achievement.toLowerCase()) {
+    switch (achievement?.toLowerCase()) {
       case "winner":
         return "bg-gradient-to-r from-yellow-400 to-yellow-600";
       case "runner-up":
@@ -123,10 +166,12 @@ const CertificatesPage: React.FC<CertificatesPageProps> = ({ user, token }) => {
     }
   };
 
-  const filteredCertificates = certificates.filter(cert =>
-    cert.eventName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    cert.achievement.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    cert.category.toLowerCase().includes(searchQuery.toLowerCase())
+  const displayedCertificates = useStaticData ? staticCertificates : certificates;
+
+  const filteredCertificates = displayedCertificates.filter(cert =>
+    cert.eventName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    cert.achievement?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    cert.category?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const CertificatePreview = ({ certificate }) => (
@@ -165,9 +210,11 @@ const CertificatesPage: React.FC<CertificatesPageProps> = ({ user, token }) => {
           </div>
           
           <div className="flex gap-3 pt-4">
-            <Button variant="hero" className="flex-1" disabled={certificate.status !== "available"}>
-              <Download className="w-4 h-4 mr-2" />
-              Download PDF
+            <Button variant="hero" className="flex-1" disabled={certificate.status !== "available"} asChild>
+              <a href={`${API_BASE_URL}/certificates/${certificate.id}/download`} target="_blank">
+                <Download className="w-4 h-4 mr-2" />
+                Download PDF
+              </a>
             </Button>
             <Button variant="glass">
               <Share2 className="w-4 h-4 mr-2" />
@@ -193,6 +240,9 @@ const CertificatesPage: React.FC<CertificatesPageProps> = ({ user, token }) => {
           <p className="text-muted-foreground">
             Download and share your hackathon achievements and certifications
           </p>
+          <Button onClick={() => setUseStaticData(!useStaticData)} className="mt-4">
+            {useStaticData ? "Switch to Live Data" : "Switch to Static Data"}
+          </Button>
         </div>
 
         {/* Stats Overview */}
@@ -200,7 +250,7 @@ const CertificatesPage: React.FC<CertificatesPageProps> = ({ user, token }) => {
           <Card className="glass-card">
             <CardContent className="p-4 text-center">
               <Trophy className="w-8 h-8 mx-auto mb-2 text-primary" />
-              <div className="text-2xl font-bold text-gradient">{certificates.length}</div>
+              <div className="text-2xl font-bold text-gradient">{filteredCertificates.length}</div>
               <div className="text-sm text-muted-foreground">Total Certificates</div>
             </CardContent>
           </Card>
@@ -208,7 +258,7 @@ const CertificatesPage: React.FC<CertificatesPageProps> = ({ user, token }) => {
             <CardContent className="p-4 text-center">
               <Crown className="w-8 h-8 mx-auto mb-2 text-yellow-500" />
               <div className="text-2xl font-bold text-gradient">
-                {certificates.filter(c => c.achievement === "Winner").length}
+                {filteredCertificates.filter(c => c.achievement === "Winner").length}
               </div>
               <div className="text-sm text-muted-foreground">Wins</div>
             </CardContent>
@@ -217,7 +267,7 @@ const CertificatesPage: React.FC<CertificatesPageProps> = ({ user, token }) => {
             <CardContent className="p-4 text-center">
               <Medal className="w-8 h-8 mx-auto mb-2 text-gray-400" />
               <div className="text-2xl font-bold text-gradient">
-                {certificates.filter(c => c.position && c.position <= 3).length}
+                {filteredCertificates.filter(c => c.position && c.position <= 3).length}
               </div>
               <div className="text-sm text-muted-foreground">Top 3 Finishes</div>
             </CardContent>
@@ -226,7 +276,7 @@ const CertificatesPage: React.FC<CertificatesPageProps> = ({ user, token }) => {
             <CardContent className="p-4 text-center">
               <Star className="w-8 h-8 mx-auto mb-2 text-purple-500" />
               <div className="text-2xl font-bold text-gradient">
-                {certificates.filter(c => c.status === "available").length}
+                {filteredCertificates.filter(c => c.status === "available").length}
               </div>
               <div className="text-sm text-muted-foreground">Available</div>
             </CardContent>
@@ -252,103 +302,102 @@ const CertificatesPage: React.FC<CertificatesPageProps> = ({ user, token }) => {
 
         {/* Certificates Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCertificates.map((certificate) => (
-            <Card 
-              key={certificate.id} 
-              className={`premium-card cursor-pointer transition-all duration-300 hover:scale-105 ${
-                certificate.status === "processing" ? "opacity-75" : ""
-              }`}
-              onClick={() => certificate.status === "available" && setSelectedCertificate(certificate)}
-            >
-              <CardHeader className="text-center pb-2">
-                <div className={`w-12 h-12 mx-auto mb-3 rounded-full ${getAchievementColor(certificate.achievement)} flex items-center justify-center`}>
-                  {getAchievementIcon(certificate.icon, certificate.position)}
-                </div>
-                <CardTitle className="text-lg">{certificate.eventName}</CardTitle>
-                <div className="flex items-center justify-center gap-2">
-                  <Badge variant={certificate.status === "available" ? "default" : "secondary"}>
-                    {certificate.achievement}
-                  </Badge>
-                  <Badge variant="outline">
-                    {certificate.category}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="text-center space-y-3">
-                <div className="space-y-2">
-                  <div className="text-sm text-muted-foreground">Team: {certificate.teamName}</div>
-                  <div className="text-sm text-muted-foreground">{certificate.eventDate}</div>
-                  {certificate.position && (
-                    <div className="text-sm font-semibold">Position: #{certificate.position}</div>
-                  )}
-                  {certificate.prize && (
-                    <div className="text-sm font-semibold text-green-500">{certificate.prize}</div>
-                  )}
-                </div>
+          {filteredCertificates.length > 0 ? (
+            filteredCertificates.map((certificate) => (
+              <Card
+                key={certificate.id}
+                className={`premium-card cursor-pointer transition-all duration-300 hover:scale-105 ${
+                  certificate.status === "processing" ? "opacity-75" : ""
+                }`}
+                onClick={() => certificate.status === "available" && setSelectedCertificate(certificate)}
+              >
+                <CardHeader className="text-center pb-2">
+                  <div className={`w-12 h-12 mx-auto mb-3 rounded-full ${getAchievementColor(certificate.achievement)} flex items-center justify-center`}>
+                    {getAchievementIcon(certificate.icon, certificate.position)}
+                  </div>
+                  <CardTitle className="text-lg">{certificate.eventName}</CardTitle>
+                  <div className="flex items-center justify-center gap-2">
+                    <Badge variant={certificate.status === "available" ? "default" : "secondary"}>
+                      {certificate.achievement}
+                    </Badge>
+                    <Badge variant="outline">
+                      {certificate.category}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="text-center space-y-3">
+                  <div className="space-y-2">
+                    <div className="text-sm text-muted-foreground">Team: {certificate.teamName}</div>
+                    <div className="text-sm text-muted-foreground">{certificate.eventDate}</div>
+                    {certificate.position && (
+                      <div className="text-sm font-semibold">Position: #{certificate.position}</div>
+                    )}
+                    {certificate.prize && (
+                      <div className="text-sm font-semibold text-green-500">{certificate.prize}</div>
+                    )}
+                  </div>
 
-                <div className="space-y-2">
-                  {certificate.status === "available" ? (
-                    <>
-                      <Button variant="hero" size="sm" className="w-full">
-                        <Eye className="w-4 h-4 mr-2" />
-                        Preview & Download
-                      </Button>
-                      <div className="flex gap-2">
-                        <Button variant="glass" size="sm" className="flex-1">
-                          <Share2 className="w-4 h-4 mr-1" />
-                          Share
+                  <div className="space-y-2">
+                    {certificate.status === "available" ? (
+                      <>
+                        <Button variant="hero" size="sm" className="w-full">
+                          <Eye className="w-4 h-4 mr-2" />
+                          Preview & Download
                         </Button>
-                        <Button variant="glass" size="sm" className="flex-1">
-                          <ExternalLink className="w-4 h-4 mr-1" />
-                          Verify
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button variant="glass" size="sm" className="flex-1">
+                            <Share2 className="w-4 h-4 mr-1" />
+                            Share
+                          </Button>
+                          <Button variant="glass" size="sm" className="flex-1">
+                            <ExternalLink className="w-4 h-4 mr-1" />
+                            Verify
+                          </Button>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="space-y-2">
+                        <div className="text-sm text-orange-500 font-medium">Processing...</div>
+                        <div className="text-xs text-muted-foreground">
+                          Certificate will be available within 24-48 hours after event completion
+                        </div>
                       </div>
-                    </>
-                  ) : (
-                    <div className="space-y-2">
-                      <div className="text-sm text-orange-500 font-medium">Processing...</div>
-                      <div className="text-xs text-muted-foreground">
-                        Certificate will be available within 24-48 hours after event completion
-                      </div>
-                    </div>
-                  )}
-                </div>
+                    )}
+                  </div>
 
-                <div className="text-xs text-muted-foreground pt-2 border-t border-border">
-                  ID: {certificate.verificationId}
-                </div>
+                  <div className="text-xs text-muted-foreground pt-2 border-t border-border">
+                    ID: {certificate.verificationId}
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          ) : (
+            <Card className="glass-card col-span-3">
+              <CardContent className="p-12 text-center">
+                <Trophy className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+                <h3 className="text-xl font-semibold mb-2">No Certificates Found</h3>
+                <p className="text-muted-foreground mb-4">
+                  {searchQuery
+                    ? "No certificates match your search criteria"
+                    : "Participate in hackathons to earn certificates and showcase your achievements"
+                  }
+                </p>
+                {!searchQuery && (
+                  <Button variant="hero">
+                    Explore Events
+                  </Button>
+                )}
               </CardContent>
             </Card>
-          ))}
+          )}
         </div>
-
-        {/* Empty State */}
-        {filteredCertificates.length === 0 && (
-          <Card className="glass-card">
-            <CardContent className="p-12 text-center">
-              <Trophy className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-xl font-semibold mb-2">No Certificates Found</h3>
-              <p className="text-muted-foreground mb-4">
-                {searchQuery 
-                  ? "No certificates match your search criteria"
-                  : "Participate in hackathons to earn certificates and showcase your achievements"
-                }
-              </p>
-              {!searchQuery && (
-                <Button variant="hero">
-                  Explore Events
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        )}
 
         {/* Certificate Verification Info */}
         <Card className="glass-card mt-8">
           <CardContent className="p-4">
             <h4 className="font-medium mb-2">Certificate Verification</h4>
             <p className="text-sm text-muted-foreground">
-              All certificates are digitally signed and can be verified using the unique verification ID. 
+              All certificates are digitally signed and can be verified using the unique verification ID.
               Employers and institutions can validate your achievements through our verification portal.
             </p>
           </CardContent>

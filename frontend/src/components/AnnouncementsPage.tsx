@@ -1,16 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { 
-  Megaphone, 
-  MessageSquare, 
-  Send, 
-  Pin, 
-  Clock, 
+import {
+  Megaphone,
+  MessageSquare,
+  Send,
+  Pin,
+  Clock,
   User,
   Reply,
   Heart,
@@ -18,20 +18,33 @@ import {
   Search,
   Filter
 } from "lucide-react";
+import { toast } from "@/components/ui/use-toast";
 
-// ✅ Props definition
+// Props definition
 interface AnnouncementsPageProps {
-  user: any;                // Replace `any` with your actual User type
+  user: any;
   token: string | null;
 }
+
+const API_BASE_URL = "https://synapse-hacks-api.onrender.com/api";
 
 const AnnouncementsPage: React.FC<AnnouncementsPageProps> = ({ user, token }) => {
   const [activeTab, setActiveTab] = useState("announcements");
   const [newQuestion, setNewQuestion] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [announcements, setAnnouncements] = useState([]);
+  const [questions, setQuestions] = useState([]);
+  const [useStaticData, setUseStaticData] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [announcementForm, setAnnouncementForm] = useState({
+    title: "",
+    message: "",
+    priority: "low",
+    eventId: 1, // Assuming a fixed event ID for now
+  });
 
-  // Sample data
-  const announcements = [
+  // Sample static data
+  const staticAnnouncements = [
     {
       id: 1,
       title: "Round 2 Judging Begins!",
@@ -54,20 +67,9 @@ const AnnouncementsPage: React.FC<AnnouncementsPageProps> = ({ user, token }) =>
       likes: 15,
       replies: 3
     },
-    {
-      id: 3,
-      title: "WiFi Network Update",
-      content: "We've upgraded our WiFi capacity! New network: HackathonPro | Password: Innovation2024. The old network will be discontinued at 2 PM.",
-      author: "Tech Support",
-      timestamp: "6 hours ago",
-      priority: "low",
-      pinned: false,
-      likes: 8,
-      replies: 2
-    }
   ];
 
-  const questions = [
+  const staticQuestions = [
     {
       id: 1,
       question: "Can we use external APIs in our project?",
@@ -92,19 +94,96 @@ const AnnouncementsPage: React.FC<AnnouncementsPageProps> = ({ user, token }) =>
       votes: 8,
       replies: 1
     },
-    {
-      id: 3,
-      question: "Is there a specific format for the presentation?",
-      author: "David Wilson",
-      timestamp: "5 hours ago",
-      answered: false,
-      votes: 6,
-      replies: 2
-    }
   ];
+
+  useEffect(() => {
+    if (useStaticData) {
+      setAnnouncements(staticAnnouncements);
+      setQuestions(staticQuestions);
+      return;
+    }
+
+    const fetchAnnouncements = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch(`${API_BASE_URL}/announcements/1`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (!response.ok) throw new Error("Failed to fetch announcements.");
+        const data = await response.json();
+        setAnnouncements(data);
+      } catch (error) {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    // Assuming a separate API for Q&A which doesn't exist yet, we'll keep static data for questions
+    if (token) {
+      fetchAnnouncements();
+    }
+  }, [token, useStaticData]);
+
+  const handlePostQuestion = async () => {
+    if (!newQuestion.trim()) {
+      toast({ title: "Error", description: "Question cannot be empty.", variant: "destructive" });
+      return;
+    }
+    
+    // This is a placeholder as the API for questions is not yet defined in the backend files.
+    // We'll simulate a success response for now.
+    toast({ title: "Success", description: "Your question has been submitted." });
+    setNewQuestion("");
+  };
+
+  const handlePostAnnouncement = async () => {
+    if (!announcementForm.title.trim() || !announcementForm.message.trim()) {
+      toast({ title: "Error", description: "Title and message are required.", variant: "destructive" });
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/announcements`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify(announcementForm),
+      });
+
+      if (!response.ok) throw new Error("Failed to post announcement.");
+      
+      toast({ title: "Success", description: "Announcement posted successfully." });
+      setAnnouncementForm({
+        title: "",
+        message: "",
+        priority: "low",
+        eventId: 1,
+      });
+      // Refresh the announcement list
+      setUseStaticData(false); // Switch to live data to see the new announcement
+    } catch (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const filteredAnnouncements = announcements.filter(announcement =>
+    announcement.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    announcement.content.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const displayedAnnouncements = useStaticData ? staticAnnouncements : filteredAnnouncements;
+  const displayedQuestions = useStaticData ? staticQuestions : questions;
 
   const renderAnnouncements = () => (
     <div className="space-y-4">
+      {/* Toggle Button */}
+      <Button onClick={() => setUseStaticData(!useStaticData)} className="mb-4">
+        {useStaticData ? "Switch to Live Data" : "Switch to Static Data"}
+      </Button>
+
       {/* Search and Filter */}
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
         <div className="relative flex-1">
@@ -123,67 +202,69 @@ const AnnouncementsPage: React.FC<AnnouncementsPageProps> = ({ user, token }) =>
       </div>
 
       {/* Announcements List */}
-      {announcements
-        .filter(announcement => 
-          announcement.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          announcement.content.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-        .map((announcement) => (
-        <Card 
-          key={announcement.id} 
-          className={`${announcement.pinned ? "premium-card border-primary/50" : "glass-card"}`}
-        >
-          <CardHeader className="pb-3">
-            <div className="flex justify-between items-start">
-              <div className="flex items-center gap-2">
-                {announcement.pinned && <Pin className="w-4 h-4 text-primary" />}
-                <CardTitle className="text-lg">{announcement.title}</CardTitle>
-                <Badge 
-                  variant={
-                    announcement.priority === "high" ? "destructive" :
-                    announcement.priority === "medium" ? "default" : "secondary"
-                  }
-                >
-                  {announcement.priority}
-                </Badge>
+      {isLoading ? (
+        <div>Loading announcements...</div>
+      ) : (
+        displayedAnnouncements.map((announcement) => (
+          <Card
+            key={announcement.id}
+            className={`${announcement.pinned ? "premium-card border-primary/50" : "glass-card"}`}
+          >
+            <CardHeader className="pb-3">
+              <div className="flex justify-between items-start">
+                <div className="flex items-center gap-2">
+                  {announcement.pinned && <Pin className="w-4 h-4 text-primary" />}
+                  <CardTitle className="text-lg">{announcement.title}</CardTitle>
+                  <Badge
+                    variant={
+                      announcement.priority === "high" ? "destructive" :
+                      announcement.priority === "medium" ? "default" : "secondary"
+                    }
+                  >
+                    {announcement.priority}
+                  </Badge>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Avatar className="w-6 h-6">
-                <AvatarImage src="" />
-                <AvatarFallback className="text-xs">
-                  {announcement.author.split(' ').map(n => n[0]).join('')}
-                </AvatarFallback>
-              </Avatar>
-              <span>{announcement.author}</span>
-              <span>•</span>
-              <Clock className="w-3 h-3" />
-              <span>{announcement.timestamp}</span>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">{announcement.content}</p>
-            <div className="flex items-center gap-4 text-sm">
-              <Button variant="ghost" size="sm" className="h-8 px-2">
-                <Heart className="w-4 h-4 mr-1" />
-                {announcement.likes}
-              </Button>
-              <Button variant="ghost" size="sm" className="h-8 px-2">
-                <MessageSquare className="w-4 h-4 mr-1" />
-                {announcement.replies}
-              </Button>
-              <Button variant="ghost" size="sm" className="h-8 px-2 ml-auto">
-                <Flag className="w-4 h-4" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Avatar className="w-6 h-6">
+                  <AvatarImage src="" />
+                  <AvatarFallback className="text-xs">
+                    {announcement.author?.split(' ').map(n => n[0]).join('') || 'O'}
+                  </AvatarFallback>
+                </Avatar>
+                <span>{announcement.author || 'Organizer'}</span>
+                <span>•</span>
+                <Clock className="w-3 h-3" />
+                <span>{announcement.timestamp}</span>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground mb-4">{announcement.content || announcement.message}</p>
+              <div className="flex items-center gap-4 text-sm">
+                <Button variant="ghost" size="sm" className="h-8 px-2">
+                  <Heart className="w-4 h-4 mr-1" />
+                  {announcement.likes || 0}
+                </Button>
+                <Button variant="ghost" size="sm" className="h-8 px-2">
+                  <MessageSquare className="w-4 h-4 mr-1" />
+                  {announcement.replies || 0}
+                </Button>
+                <Button variant="ghost" size="sm" className="h-8 px-2 ml-auto">
+                  <Flag className="w-4 h-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))
+      )}
     </div>
   );
 
   const renderQA = () => (
     <div className="space-y-6">
+      <Button onClick={() => setUseStaticData(!useStaticData)} className="mb-4">
+        {useStaticData ? "Switch to Live Data" : "Switch to Static Data"}
+      </Button>
       {/* Ask Question Form */}
       <Card className="premium-card">
         <CardHeader>
@@ -203,13 +284,10 @@ const AnnouncementsPage: React.FC<AnnouncementsPageProps> = ({ user, token }) =>
             <div className="text-xs text-muted-foreground">
               Questions are moderated and will be answered by organizers or judges
             </div>
-            <Button 
-              variant="hero" 
+            <Button
+              variant="hero"
               disabled={newQuestion.trim().length === 0}
-              onClick={() => {
-                // Handle question submission
-                setNewQuestion("");
-              }}
+              onClick={handlePostQuestion}
             >
               <Send className="w-4 h-4 mr-2" />
               Ask Question
@@ -220,7 +298,7 @@ const AnnouncementsPage: React.FC<AnnouncementsPageProps> = ({ user, token }) =>
 
       {/* Questions List */}
       <div className="space-y-4">
-        {questions.map((q) => (
+        {displayedQuestions.map((q) => (
           <Card key={q.id} className="glass-card">
             <CardContent className="p-6">
               {/* Question */}

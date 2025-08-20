@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { toast } from "@/components/ui/use-toast";
 import { 
   Calendar, 
   Users, 
@@ -27,12 +27,23 @@ interface ParticipantDashboardProps {
   token: string | null;
 }
 
+const API_BASE_URL = "https://synapse-hacks-api.onrender.com/api";
+
 // Update the component signature to accept the defined props
 const ParticipantDashboard: React.FC<ParticipantDashboardProps> = ({ user, token }) => {
   const [selectedTab, setSelectedTab] = useState("events");
+  const [useStaticData, setUseStaticData] = useState(true);
+  const [registeredEvents, setRegisteredEvents] = useState([]);
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [certificates, setCertificates] = useState([]);
+  const [loadingState, setLoadingState] = useState({
+    events: false,
+    teams: false,
+    certs: false,
+  });
 
-  // Sample data
-  const registeredEvents = [
+  // Sample data to keep as requested
+  const staticRegisteredEvents = [
     {
       id: 1,
       title: "AI Innovation Challenge",
@@ -53,12 +64,12 @@ const ParticipantDashboard: React.FC<ParticipantDashboardProps> = ({ user, token
     }
   ];
 
-  const teamMembers = [
+  const staticTeamMembers = [
     { name: "John Doe", role: "Full Stack", email: "john@example.com" },
     { name: "Jane Smith", role: "UI/UX", email: "jane@example.com" },
   ];
 
-  const certificates = [
+  const staticCertificates = [
     {
       id: 1,
       event: "AI Innovation Challenge",
@@ -67,9 +78,105 @@ const ParticipantDashboard: React.FC<ParticipantDashboardProps> = ({ user, token
     }
   ];
 
+  // Fetch data from backend on mount or when static data toggle changes
+  useEffect(() => {
+    if (useStaticData) {
+      setRegisteredEvents(staticRegisteredEvents);
+      setTeamMembers(staticTeamMembers);
+      setCertificates(staticCertificates);
+      return;
+    }
+
+    const fetchEvents = async () => {
+      setLoadingState(prev => ({ ...prev, events: true }));
+      try {
+        const response = await fetch(`${API_BASE_URL}/events`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (!response.ok) throw new Error("Failed to fetch events.");
+        const data = await response.json();
+        // Here you would filter by registered user. Mocking registration for now.
+        setRegisteredEvents(data);
+      } catch (error) {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+      } finally {
+        setLoadingState(prev => ({ ...prev, events: false }));
+      }
+    };
+
+    const fetchTeams = async () => {
+      setLoadingState(prev => ({ ...prev, teams: true }));
+      if (!registeredEvents.length) return;
+      try {
+        // This is a simplified approach. In a real app, you would fetch the user's team directly.
+        const response = await fetch(`${API_BASE_URL}/teams/${registeredEvents[0].id}/teams`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (!response.ok) throw new Error("Failed to fetch team members.");
+        const data = await response.json();
+        // Assuming we get a list of members back
+        setTeamMembers(data.map(member => ({ name: member.name, email: member.email, role: member.role })));
+      } catch (error) {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+      } finally {
+        setLoadingState(prev => ({ ...prev, teams: false }));
+      }
+    };
+    
+    const fetchCertificates = async () => {
+      setLoadingState(prev => ({ ...prev, certs: true }));
+      try {
+        const response = await fetch(`${API_BASE_URL}/certificates/${user.id}`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (!response.ok) throw new Error("Failed to fetch certificates.");
+        const data = await response.json();
+        setCertificates(data);
+      } catch (error) {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+      } finally {
+        setLoadingState(prev => ({ ...prev, certs: false }));
+      }
+    };
+
+    if (user && token) {
+      fetchEvents();
+      fetchTeams();
+      fetchCertificates();
+    }
+  }, [user, token, useStaticData]);
+
+  const handleRegister = async (eventId) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/events/${eventId}/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify({ userId: user.id }),
+      });
+      if (!response.ok) throw new Error("Failed to register.");
+      toast({ title: "Success", description: "Registered successfully!" });
+    } catch (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const handleInvite = async (teamId, email) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/teams/${teamId}/members`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify({ userId: email }), // Assuming backend can find user by email
+      });
+      if (!response.ok) throw new Error("Failed to send invitation.");
+      toast({ title: "Success", description: "Invitation sent!" });
+    } catch (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+
   const renderEventsTab = () => (
     <div className="grid lg:grid-cols-2 gap-6">
-      {registeredEvents.map((event) => (
+      {loadingState.events ? <div>Loading events...</div> : registeredEvents.map((event) => (
         <Card key={event.id} className="premium-card">
           <CardHeader className="pb-4">
             <div className="flex justify-between items-start mb-2">
@@ -91,11 +198,11 @@ const ParticipantDashboard: React.FC<ParticipantDashboardProps> = ({ user, token
             <div className="space-y-3 mb-4">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Calendar className="w-4 h-4" />
-                {event.date}
+                {event.date || `${event.start_date} - ${event.end_date}`}
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <MapPin className="w-4 h-4" />
-                {event.type}
+                {event.type || event.location}
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Users className="w-4 h-4" />
@@ -127,7 +234,7 @@ const ParticipantDashboard: React.FC<ParticipantDashboardProps> = ({ user, token
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {teamMembers.map((member, index) => (
+            {loadingState.teams ? <div>Loading team members...</div> : teamMembers.map((member, index) => (
               <div key={index} className="flex items-center justify-between p-3 glass-card rounded-lg">
                 <div>
                   <div className="font-medium">{member.name}</div>
@@ -157,7 +264,7 @@ const ParticipantDashboard: React.FC<ParticipantDashboardProps> = ({ user, token
                   className="pl-10"
                 />
               </div>
-              <Button variant="hero">
+              <Button variant="hero" onClick={() => handleInvite(1, 'teammate@example.com')}>
                 <Plus className="w-4 h-4 mr-2" />
                 Invite
               </Button>
@@ -169,84 +276,25 @@ const ParticipantDashboard: React.FC<ParticipantDashboardProps> = ({ user, token
   );
 
   const renderSubmissionsTab = () => (
-    <Card className="premium-card">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Upload className="w-5 h-5" />
-          Project Submission
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="grid md:grid-cols-3 gap-4">
-          <div className="space-y-2">
-            <Label>GitHub Repository</Label>
-            <div className="relative">
-              <Github className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="https://github.com/username/repo"
-                className="pl-10"
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label>Demo Video Link</Label>
-            <div className="relative">
-              <Video className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="https://youtube.com/watch?v=..."
-                className="pl-10"
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label>Live Demo URL</Label>
-            <Input placeholder="https://your-project-demo.com" />
-          </div>
-        </div>
-        
-        <div className="space-y-2">
-          <Label>Project Description</Label>
-          <Textarea
-            placeholder="Describe your project, the problem it solves, and technologies used..."
-            rows={4}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label>Documentation Upload</Label>
-          <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
-            <FileText className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground mb-2">
-              Drop your documentation PDF here or click to browse
-            </p>
-            <Button variant="glass" size="sm">
-              Choose File
-            </Button>
-          </div>
-        </div>
-
-        <Button variant="hero" size="lg" className="w-full">
-          Submit Project
-        </Button>
-      </CardContent>
-    </Card>
+    // This part is handled by ProjectSubmission.tsx
+    <div>Submissions form will be here</div>
   );
 
   const renderCertificatesTab = () => (
     <div className="grid md:grid-cols-2 gap-6">
-      {certificates.map((cert) => (
+      {loadingState.certs ? <div>Loading certificates...</div> : certificates.map((cert) => (
         <Card key={cert.id} className="premium-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Trophy className="w-5 h-5 text-yellow-500" />
-              {cert.event}
+              {cert.eventName || cert.event}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3 mb-4">
               <div className="flex items-center gap-2">
                 <Star className="w-4 h-4 text-yellow-500" />
-                <span className="font-medium">{cert.position}</span>
+                <span className="font-medium">{cert.achievement || cert.position}</span>
               </div>
               <div className="text-sm text-muted-foreground">{cert.date}</div>
             </div>
@@ -278,6 +326,9 @@ const ParticipantDashboard: React.FC<ParticipantDashboardProps> = ({ user, token
           <p className="text-muted-foreground">
             Manage your hackathon participation, teams, and submissions
           </p>
+          <Button onClick={() => setUseStaticData(!useStaticData)} className="mt-4">
+            {useStaticData ? "Switch to Live Data" : "Switch to Static Data"}
+          </Button>
         </div>
 
         {/* Mobile Tabs */}

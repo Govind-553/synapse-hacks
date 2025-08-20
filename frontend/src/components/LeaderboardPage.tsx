@@ -1,10 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { toast } from "@/components/ui/use-toast";
 import {
   Trophy,
   Crown,
@@ -56,21 +57,26 @@ interface LeaderboardPageProps {
   token: string | null;
 }
 
+const API_BASE_URL = "https://synapse-hacks-api.onrender.com/api";
+
 // Update the component to accept the props
 const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ user, token }) => {
   const [selectedEvent, setSelectedEvent] = useState("current");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("score");
-  const [lastUpdated, setLastUpdated] = useState("2 minutes ago");
+  const [lastUpdated, setLastUpdated] = useState("just now");
+  const [useStaticData, setUseStaticData] = useState(true);
+  const [liveLeaderboardData, setLiveLeaderboardData] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Sample data
-  const events: Event[] = [
+  const staticEvents: Event[] = [
     { id: "current", name: "AI Innovation Challenge", status: "ongoing" },
     { id: "web3", name: "Web3 Hackathon", status: "completed" },
     { id: "sustainability", name: "Sustainability Challenge", status: "completed" }
   ];
 
-  const leaderboardData: LeaderboardEntry[] = [
+  const staticLeaderboardData: LeaderboardEntry[] = [
     {
       rank: 1,
       teamName: "Code Warriors",
@@ -163,6 +169,38 @@ const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ user, token }) => {
     }
   ];
 
+  const fetchLeaderboardData = async () => {
+    if (!token) return;
+
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/leaderboard/${selectedEvent}`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (!response.ok) {
+        throw new Error("Failed to fetch leaderboard data.");
+      }
+      const data = await response.json();
+      setLiveLeaderboardData(data);
+      setLastUpdated("just now");
+    } catch (error) {
+      toast({
+        title: "Error fetching leaderboard",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!useStaticData) {
+      fetchLeaderboardData();
+    }
+  }, [selectedEvent, useStaticData, token]);
+
+
   const getRankIcon = (rank: number) => {
     switch (rank) {
       case 1: return <Crown className="w-6 h-6 text-yellow-500" />;
@@ -184,11 +222,13 @@ const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ user, token }) => {
     }
   };
 
+  const currentData = useStaticData ? staticLeaderboardData : liveLeaderboardData;
+
   // Filter and sort data based on state changes
   const sortedData = useMemo(() => {
-    const data = leaderboardData.filter(team =>
+    const data = currentData.filter(team =>
       team.teamName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      team.projectName.toLowerCase().includes(searchQuery.toLowerCase())
+      (team.projectName || '').toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     const sortableData = [...data];
@@ -197,14 +237,14 @@ const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ user, token }) => {
       sortableData.sort((a, b) => b.score - a.score);
     } else {
       sortableData.sort((a, b) => {
-        const scoreA = a.scores[sortBy as keyof Scores];
-        const scoreB = b.scores[sortBy as keyof Scores];
+        const scoreA = a.scores?.[sortBy as keyof Scores] || 0;
+        const scoreB = b.scores?.[sortBy as keyof Scores] || 0;
         return scoreB - scoreA;
       });
     }
 
     return sortableData;
-  }, [leaderboardData, searchQuery, sortBy]);
+  }, [currentData, searchQuery, sortBy]);
 
   const renderLeaderboardCard = (team: LeaderboardEntry) => (
     <Card
@@ -260,6 +300,9 @@ const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ user, token }) => {
           <p className="text-muted-foreground">
             Real-time rankings and scores for all participants
           </p>
+          <Button onClick={() => setUseStaticData(!useStaticData)} className="mt-4">
+            {useStaticData ? "Switch to Live Data" : "Switch to Static Data"}
+          </Button>
         </div>
 
         {/* Controls */}
@@ -281,7 +324,7 @@ const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ user, token }) => {
               <SelectValue placeholder="Select event" />
             </SelectTrigger>
             <SelectContent>
-              {events.map((event) => (
+              {staticEvents.map((event) => (
                 <SelectItem key={event.id} value={event.id}>
                   <div className="flex items-center gap-2">
                     <span>{event.name}</span>
@@ -308,7 +351,7 @@ const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ user, token }) => {
             </SelectContent>
           </Select>
 
-          <Button variant="glass">
+          <Button variant="glass" onClick={fetchLeaderboardData}>
             <RefreshCw className="w-4 h-4 mr-2" />
             Refresh
           </Button>
@@ -341,87 +384,91 @@ const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ user, token }) => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {sortedData.map((team) => (
-                  <div
-                    key={team.rank}
-                    className={`flex items-center justify-between p-4 rounded-lg transition-all ${
-                      team.rank <= 3 ? "bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20" : "glass-card"
-                    }`}
-                  >
-                    <div className="flex items-center gap-4 flex-1">
-                      <div className="flex items-center gap-2">
-                        {getRankIcon(team.rank)}
-                        {getTrendIcon(team.trend)}
-                      </div>
-                      
-                      <Avatar className="w-12 h-12">
-                        <AvatarImage src={team.avatar} />
-                        <AvatarFallback>
-                          {team.teamName.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                        </AvatarFallback>
-                      </Avatar>
+                {isLoading ? (
+                  <div>Loading...</div>
+                ) : (
+                  sortedData.map((team) => (
+                    <div
+                      key={team.rank}
+                      className={`flex items-center justify-between p-4 rounded-lg transition-all ${
+                        team.rank <= 3 ? "bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20" : "glass-card"
+                      }`}
+                    >
+                      <div className="flex items-center gap-4 flex-1">
+                        <div className="flex items-center gap-2">
+                          {getRankIcon(team.rank)}
+                          {getTrendIcon(team.trend)}
+                        </div>
+                        
+                        <Avatar className="w-12 h-12">
+                          <AvatarImage src={team.avatar} />
+                          <AvatarFallback>
+                            {team.teamName.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                          </AvatarFallback>
+                        </Avatar>
 
-                      <div className="flex-1">
-                        <h3 className="font-bold text-lg">{team.teamName}</h3>
-                        <p className="text-muted-foreground">{team.projectName}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Users className="w-3 h-3" />
-                          <span className="text-xs text-muted-foreground">
-                            {team.members.join(', ')}
-                          </span>
+                        <div className="flex-1">
+                          <h3 className="font-bold text-lg">{team.teamName}</h3>
+                          <p className="text-muted-foreground">{team.projectName}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Users className="w-3 h-3" />
+                            <span className="text-xs text-muted-foreground">
+                              {team.members.join(', ')}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-6">
+                        {/* Score Breakdown */}
+                        <div className="hidden xl:flex items-center gap-4 text-sm">
+                          <div className="text-center">
+                            <div className="font-medium">{team.scores.innovation}</div>
+                            <div className="text-xs text-muted-foreground">Innovation</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="font-medium">{team.scores.functionality}</div>
+                            <div className="text-xs text-muted-foreground">Functionality</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="font-medium">{team.scores.design}</div>
+                            <div className="text-xs text-muted-foreground">Design</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="font-medium">{team.scores.scalability}</div>
+                            <div className="text-xs text-muted-foreground">Scalability</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="font-medium">{team.scores.presentation}</div>
+                            <div className="text-xs text-muted-foreground">Presentation</div>
+                          </div>
+                        </div>
+
+                        {/* Total Score */}
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-gradient">
+                            {team.score.toFixed(1)}
+                          </div>
+                          <div className="text-sm text-muted-foreground">points</div>
+                        </div>
+
+                        {/* Links */}
+                        <div className="flex flex-col gap-2">
+                          <a href={team.githubUrl} target="_blank" rel="noopener noreferrer">
+                            <Button variant="glass" size="icon">
+                              <Github className="w-5 h-5" />
+                            </Button>
+                          </a>
+                          <a href={team.demoUrl} target="_blank" rel="noopener noreferrer">
+                            <Button variant="glass" size="icon">
+                              <ExternalLink className="w-5 h-5" />
+                            </Button>
+                          </a>
                         </div>
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-6">
-                      {/* Score Breakdown */}
-                      <div className="hidden xl:flex items-center gap-4 text-sm">
-                        <div className="text-center">
-                          <div className="font-medium">{team.scores.innovation}</div>
-                          <div className="text-xs text-muted-foreground">Innovation</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="font-medium">{team.scores.functionality}</div>
-                          <div className="text-xs text-muted-foreground">Functionality</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="font-medium">{team.scores.design}</div>
-                          <div className="text-xs text-muted-foreground">Design</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="font-medium">{team.scores.scalability}</div>
-                          <div className="text-xs text-muted-foreground">Scalability</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="font-medium">{team.scores.presentation}</div>
-                          <div className="text-xs text-muted-foreground">Presentation</div>
-                        </div>
-                      </div>
-
-                      {/* Total Score */}
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-gradient">
-                          {team.score.toFixed(1)}
-                        </div>
-                        <div className="text-sm text-muted-foreground">points</div>
-                      </div>
-
-                      {/* Links */}
-                      <div className="flex flex-col gap-2">
-                        <a href={team.githubUrl} target="_blank" rel="noopener noreferrer">
-                          <Button variant="glass" size="icon">
-                            <Github className="w-5 h-5" />
-                          </Button>
-                        </a>
-                        <a href={team.demoUrl} target="_blank" rel="noopener noreferrer">
-                          <Button variant="glass" size="icon">
-                            <ExternalLink className="w-5 h-5" />
-                          </Button>
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>
@@ -430,7 +477,7 @@ const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ user, token }) => {
         {/* Mobile Leaderboard Cards */}
         <div className="lg:hidden">
           <div className="space-y-4">
-            {sortedData.map(renderLeaderboardCard)}
+            {isLoading ? <div>Loading...</div> : sortedData.map(renderLeaderboardCard)}
           </div>
         </div>
       </div>

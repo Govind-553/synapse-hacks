@@ -19,11 +19,14 @@ import {
   Users,
   Trophy
 } from "lucide-react";
+import { toast } from "@/components/ui/use-toast";
 
 interface ProjectSubmissionProps {
   user: any;
   token: string | null;
 }
+
+const API_BASE_URL = "https://synapse-hacks-api.onrender.com/api";
 
 const ProjectSubmission: React.FC<ProjectSubmissionProps> = ({ user, token }) => {
   const [submissionData, setSubmissionData] = useState({
@@ -40,6 +43,7 @@ const ProjectSubmission: React.FC<ProjectSubmissionProps> = ({ user, token }) =>
 
   const [dragActive, setDragActive] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Sample event data
   const eventInfo = {
@@ -91,6 +95,83 @@ const ProjectSubmission: React.FC<ProjectSubmissionProps> = ({ user, token }) =>
   const isFormValid = () => {
     const required = ['projectTitle', 'description', 'githubRepo'];
     return required.every(field => (submissionData as any)[field]?.trim() !== '');
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isFormValid() || isSubmitting) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!user || !token) {
+      toast({
+        title: "Authentication Error",
+        description: "You must be logged in to submit a project.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    const submissionPayload = {
+      // Assuming a fixed eventId for now. This should be dynamic.
+      eventId: 1, 
+      teamId: user.teamId || 1, // Assuming user has a teamId.
+      projectTitle: submissionData.projectTitle,
+      description: submissionData.description,
+      githubUrl: submissionData.githubRepo,
+      demoUrl: submissionData.liveDemo,
+      videoUrl: submissionData.demoVideo,
+      documentationUrl: submissionData.documentation ? "path/to/uploaded/doc" : null,
+      // You would handle the file upload separately and get a URL to store here.
+    };
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/submissions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify(submissionPayload),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to submit project.");
+      }
+
+      toast({
+        title: "Success",
+        description: "Project submitted successfully!",
+      });
+
+      // Clear form after successful submission
+      setSubmissionData({
+        projectTitle: "",
+        description: "",
+        githubRepo: "",
+        demoVideo: "",
+        liveDemo: "",
+        category: "",
+        technologies: "",
+        teamMembers: "",
+        documentation: null
+      });
+      setUploadedFile(null);
+    } catch (error) {
+      toast({
+        title: "Submission Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const categories = [
@@ -220,14 +301,11 @@ const ProjectSubmission: React.FC<ProjectSubmissionProps> = ({ user, token }) =>
                 variant="hero"
                 size="lg"
                 className="flex-1"
-                disabled={!isFormValid()}
-                onClick={() => {
-                  // Handle submission logic here
-                  console.log("Submitting project:", submissionData);
-                }}
+                disabled={!isFormValid() || isSubmitting}
+                onClick={handleSubmit}
               >
                 <Upload className="w-5 h-5 mr-2" />
-                Submit Project
+                {isSubmitting ? "Submitting..." : "Submit Project"}
               </Button>
               <Button
                 variant="glass"
@@ -258,7 +336,7 @@ const ProjectSubmission: React.FC<ProjectSubmissionProps> = ({ user, token }) =>
 
           {/* Main Submission Form */}
           <div className="lg:col-span-3">
-            <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
               {/* Basic Information */}
               <Card className="premium-card">
                 <CardHeader>
