@@ -18,7 +18,14 @@ import {
   ExternalLink
 } from "lucide-react";
 
-const CertificatesPage = () => {
+// Add an interface to define the props
+interface CertificatesPageProps {
+  user: any;
+  token: string | null;
+}
+
+// Update the component to accept the props
+const CertificatesPage: React.FC<CertificatesPageProps> = ({ user, token }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCertificate, setSelectedCertificate] = useState(null);
 

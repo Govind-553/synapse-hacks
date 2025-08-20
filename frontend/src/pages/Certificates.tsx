@@ -2,12 +2,17 @@ import CertificatesPage from "@/components/CertificatesPage";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 
-const Certificates = () => {
+interface PageProps {
+  user: any;
+  token: string | null;
+}
+
+const Certificates: React.FC<PageProps> = ({ user, token }) => {
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
+      <Navigation user={user} logout={() => {}} />
       <main className="pt-16">
-        <CertificatesPage />
+        <CertificatesPage user={user} token={token} />
       </main>
       <Footer />
     </div>

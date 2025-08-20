@@ -21,7 +21,14 @@ import {
   Send
 } from "lucide-react";
 
-const OrganizerDashboard = () => {
+// Add an interface to define the props that the component expects
+interface OrganizerDashboardProps {
+  user: any;
+  token: string | null;
+}
+
+// Update the component signature to accept the defined props
+const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({ user, token }) => {
   const [selectedTab, setSelectedTab] = useState("create");
 
   // Sample data

@@ -2,12 +2,17 @@ import JudgeDashboard from "@/components/dashboards/JudgeDashboard";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 
-const JudgeDashboardPage = () => {
+interface DashboardPageProps {
+  user: any;
+  token: string | null;
+}
+
+const JudgeDashboardPage: React.FC<DashboardPageProps> = ({ user, token }) => {
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
+      <Navigation user={user} logout={() => {}} />
       <main className="pt-16">
-        <JudgeDashboard />
+        <JudgeDashboard user={user} token={token} />
       </main>
       <Footer />
     </div>

@@ -69,8 +69,14 @@ interface Tab {
   icon: any; // Using 'any' since lucide-react icons are components
 }
 
+// Add an interface to define the props that the component expects
+interface JudgeDashboardProps {
+  user: any;
+  token: string | null;
+}
+
 // --- Main Component ---
-const JudgeDashboard = () => {
+const JudgeDashboard: React.FC<JudgeDashboardProps> = ({ user, token }) => {
   // Use a type union for selectedTab
   const [selectedTab, setSelectedTab] = useState<Tab["id"]>("events");
   // Use the Submission type for selectedSubmission, which can be null

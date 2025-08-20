@@ -20,7 +20,12 @@ import {
   Trophy
 } from "lucide-react";
 
-const ProjectSubmission = () => {
+interface ProjectSubmissionProps {
+  user: any;
+  token: string | null;
+}
+
+const ProjectSubmission: React.FC<ProjectSubmissionProps> = ({ user, token }) => {
   const [submissionData, setSubmissionData] = useState({
     projectTitle: "",
     description: "",

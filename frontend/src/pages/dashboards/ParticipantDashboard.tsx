@@ -2,12 +2,17 @@ import ParticipantDashboard from "@/components/dashboards/ParticipantDashboard";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 
-const ParticipantDashboardPage = () => {
+interface DashboardPageProps {
+  user: any;
+  token: string | null;
+}
+
+const ParticipantDashboardPage: React.FC<DashboardPageProps> = ({ user, token }) => {
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
+      <Navigation user={user} logout={() => {}} />
       <main className="pt-16">
-        <ParticipantDashboard />
+        <ParticipantDashboard user={user} token={token} />
       </main>
       <Footer />
     </div>

@@ -1,10 +1,45 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Code2, Trophy, Users } from "lucide-react";
+import { Menu, X, Code2, Trophy, Users, LayoutDashboard, LogOut } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
-const Navigation = () => {
+// Define the types for the props the component will receive
+interface NavigationProps {
+  user: {
+    name: string;
+    email: string;
+    avatar: string;
+    role: "participant" | "organizer" | "judge";
+  } | null;
+  logout: () => void;
+}
+
+const Navigation: React.FC<NavigationProps> = ({ user, logout }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  // A helper function to get the appropriate dashboard link based on user role
+  const getDashboardLink = () => {
+    if (!user) return "/login"; // Should not happen if this function is called when logged in
+    switch (user.role) {
+      case "participant":
+        return "/participant-dashboard";
+      case "organizer":
+        return "/organizer-dashboard";
+      case "judge":
+        return "/judge-dashboard";
+      default:
+        return "/";
+    }
+  };
 
   return (
     <nav className="fixed top-0 w-full z-50 glass-card border-b border-white/10">
@@ -31,14 +66,47 @@ const Navigation = () => {
             </Link>
           </div>
 
-          {/* Desktop Auth Buttons */}
+          {/* Desktop Auth/User Buttons */}
           <div className="hidden md:flex items-center space-x-4">
-            <Button variant="glass" size="sm" asChild>
-              <Link to="/login">Login</Link>
-            </Button>
-            <Button variant="hero" size="sm" asChild>
-              <Link to="/register">Get Started</Link>
-            </Button>
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="glass" className="space-x-2">
+                    <Avatar className="h-6 w-6">
+                      <AvatarImage src={user.avatar} />
+                      <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <span>{user.name}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56 glass-card border-white/10">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to={getDashboardLink()}>
+                      <LayoutDashboard className="mr-2 h-4 w-4" />
+                      <span>Dashboard</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={logout} asChild>
+                    <Link to="/">
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>Log out</span>
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <>
+                <Button variant="glass" size="sm" asChild>
+                  <Link to="/login">Login</Link>
+                </Button>
+                <Button variant="hero" size="sm" asChild>
+                  <Link to="/register">Get Started</Link>
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -80,12 +148,28 @@ const Navigation = () => {
                 About
               </Link>
               <div className="flex flex-col space-y-2 pt-4">
-                <Button variant="glass" size="sm" asChild>
-                  <Link to="/login">Login</Link>
-                </Button>
-                <Button variant="hero" size="sm" asChild>
-                  <Link to="/register">Get Started</Link>
-                </Button>
+                {user ? (
+                  <>
+                    <Button variant="hero" size="sm" asChild>
+                      <Link to={getDashboardLink()} onClick={() => setIsMenuOpen(false)}>
+                        <LayoutDashboard className="w-4 h-4 mr-2" />
+                        Dashboard
+                      </Link>
+                    </Button>
+                    <Button variant="glass" size="sm" onClick={() => { setIsMenuOpen(false); logout(); }}>
+                      <Link to="/">Logout</Link>
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button variant="glass" size="sm" asChild onClick={() => setIsMenuOpen(false)}>
+                      <Link to="/login">Login</Link>
+                    </Button>
+                    <Button variant="hero" size="sm" asChild onClick={() => setIsMenuOpen(false)}>
+                      <Link to="/register">Get Started</Link>
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           </div>

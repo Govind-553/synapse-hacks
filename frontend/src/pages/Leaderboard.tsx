@@ -2,12 +2,17 @@ import LeaderboardPage from "@/components/LeaderboardPage";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 
-const Leaderboard = () => {
+interface PageProps {
+  user: any;
+  token: string | null;
+}
+
+const Leaderboard: React.FC<PageProps> = ({ user, token }) => {
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
+      <Navigation user={user} logout={() => {}} />
       <main className="pt-16">
-        <LeaderboardPage />
+        <LeaderboardPage user={user} token={token} />
       </main>
       <Footer />
     </div>

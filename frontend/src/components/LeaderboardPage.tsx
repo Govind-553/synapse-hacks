@@ -50,7 +50,14 @@ interface LeaderboardEntry {
   demoUrl: string;
 }
 
-const LeaderboardPage = () => {
+// Add an interface to define the props
+interface LeaderboardPageProps {
+  user: any;
+  token: string | null;
+}
+
+// Update the component to accept the props
+const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ user, token }) => {
   const [selectedEvent, setSelectedEvent] = useState("current");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("score");

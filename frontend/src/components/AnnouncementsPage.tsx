@@ -19,7 +19,13 @@ import {
   Filter
 } from "lucide-react";
 
-const AnnouncementsPage = () => {
+// ✅ Props definition
+interface AnnouncementsPageProps {
+  user: any;                // Replace `any` with your actual User type
+  token: string | null;
+}
+
+const AnnouncementsPage: React.FC<AnnouncementsPageProps> = ({ user, token }) => {
   const [activeTab, setActiveTab] = useState("announcements");
   const [newQuestion, setNewQuestion] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -293,6 +299,9 @@ const AnnouncementsPage = () => {
           </h1>
           <p className="text-muted-foreground">
             Stay updated with announcements and get your questions answered
+          </p>
+          <p className="text-xs mt-2 text-gray-500">
+            Logged in as: {user ? user.name : "Guest"} {token ? "(Authenticated)" : "(No Token)"}
           </p>
         </div>
 

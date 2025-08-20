@@ -1,24 +1,60 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Mail, Lock, Github, Chrome, ArrowLeft } from "lucide-react";
+import { toast } from "@/components/ui/use-toast";
 
-const Login = () => {
+interface LoginProps {
+  login: (token: string, user: { id: string; role: string; name: string }) => void;
+}
+
+const Login: React.FC<LoginProps> = ({ login }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
+    
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Login failed. Please check your credentials.");
+      }
+
+      const result = await response.json();
+      login(result.token, { id: result.user.id, role: result.user.role, name: result.user.name });
+      
+      toast({
+        title: "Success",
+        description: "Logged in successfully! Redirecting to dashboard...",
+      });
+
+      navigate(`/dashboard/${result.user.role}`);
+
+    } catch (error) {
+      console.error("Login error:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Something went wrong during login.",
+        variant: "destructive"
+      });
+    } finally {
       setIsLoading(false);
-      // Handle login logic here
-    }, 2000);
+    }
   };
 
   return (

@@ -21,7 +21,14 @@ import {
   Star
 } from "lucide-react";
 
-const ParticipantDashboard = () => {
+// Add an interface to define the props that the component expects
+interface ParticipantDashboardProps {
+  user: any;
+  token: string | null;
+}
+
+// Update the component signature to accept the defined props
+const ParticipantDashboard: React.FC<ParticipantDashboardProps> = ({ user, token }) => {
   const [selectedTab, setSelectedTab] = useState("events");
 
   // Sample data
