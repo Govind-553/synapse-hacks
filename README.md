@@ -33,11 +33,11 @@ It provides a robust, role-based ecosystem for organizers, participants, and jud
 ## Tech Stack
 - The platform is built with a modern, full-stack architecture.
 
-- *Frontend:* React, TypeScript, Tailwind CSS, Shadcn/UI, React Router Dom
+- **Frontend:** React, TypeScript, Tailwind CSS, Shadcn/UI, React Router Dom
 
-- *Backend:* Node.js, Express.js, Socket.io, JWT
+- **Backend:** Node.js, Express.js, Socket.io, JWT
 
-- *Database:* 
+- **Database:** 
    - Azure SQL (for structured data like users, events, and teams) 
    - MongoDB (for unstructured data like submissions and announcements)
 
