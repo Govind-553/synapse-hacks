@@ -4,17 +4,18 @@ const certificatesController = require('../controllers/certificates_controller')
 
 /**
  * Initializes certificate routes.
+ * @param {object} sqlPool - The mssql connection pool.
  * @returns {express.Router} The Express router for certificates.
  */
-module.exports = () => {
+module.exports = (sqlPool) => {
   // Get all certificates for a specific user
-  router.get('/:userId', certificatesController.getUserCertificates);
+  router.get('/:userId', (req, res) => certificatesController.getUserCertificates(req, res, sqlPool));
 
   // Download a specific certificate
   router.get('/:id/download', certificatesController.downloadCertificate);
   
   // Generate a new certificate for an event winner/participant
-  router.post('/:eventId', certificatesController.generateCertificate);
+  router.post('/:eventId', (req, res) => certificatesController.generateCertificate(req, res, sqlPool));
 
   return router;
 };

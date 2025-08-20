@@ -4,7 +4,7 @@ const eventsService = require('../services/events_service');
  * Fetches all events.
  * @param {object} req - The request object.
  * @param {object} res - The response object.
- * @param {object} sqlPool - The MySQL connection pool.
+ * @param {object} sqlPool - The mssql connection pool.
  */
 exports.getEvents = async (req, res, sqlPool) => {
   try {
@@ -19,7 +19,7 @@ exports.getEvents = async (req, res, sqlPool) => {
  * Fetches a single event by ID.
  * @param {object} req - The request object.
  * @param {object} res - The response object.
- * @param {object} sqlPool - The MySQL connection pool.
+ * @param {object} sqlPool - The mssql connection pool.
  */
 exports.getEventById = async (req, res, sqlPool) => {
   try {
@@ -37,7 +37,7 @@ exports.getEventById = async (req, res, sqlPool) => {
  * Creates a new event.
  * @param {object} req - The request object.
  * @param {object} res - The response object.
- * @param {object} sqlPool - The MySQL connection pool.
+ * @param {object} sqlPool - The mssql connection pool.
  */
 exports.createEvent = async (req, res, sqlPool) => {
   try {
@@ -52,7 +52,7 @@ exports.createEvent = async (req, res, sqlPool) => {
  * Updates an existing event.
  * @param {object} req - The request object.
  * @param {object} res - The response object.
- * @param {object} sqlPool - The MySQL connection pool.
+ * @param {object} sqlPool - The mssql connection pool.
  */
 exports.updateEvent = async (req, res, sqlPool) => {
   try {
@@ -68,7 +68,7 @@ exports.updateEvent = async (req, res, sqlPool) => {
  * Deletes an event.
  * @param {object} req - The request object.
  * @param {object} res - The response object.
- * @param {object} sqlPool - The MySQL connection pool.
+ * @param {object} sqlPool - The mssql connection pool.
  */
 exports.deleteEvent = async (req, res, sqlPool) => {
   try {
@@ -86,7 +86,7 @@ exports.deleteEvent = async (req, res, sqlPool) => {
  * Registers a participant for an event.
  * @param {object} req - The request object.
  * @param {object} res - The response object.
- * @param {object} sqlPool - The MySQL connection pool.
+ * @param {object} sqlPool - The mssql connection pool.
  */
 exports.registerForEvent = async (req, res, sqlPool) => {
   try {

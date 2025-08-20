@@ -4,10 +4,10 @@ const submissionsController = require('../controllers/submissions_controller');
 
 /**
  * Initializes submission routes.
- * @param {object} io - The Socket.io instance.
+ * @param {object} SubmissionModel - The Mongoose Submission model.
  * @returns {express.Router} The Express router for submissions.
  */
-module.exports = (io) => {
+module.exports = (SubmissionModel) => {
   // Submit a new project
   router.post('/', submissionsController.submitProject);
 
