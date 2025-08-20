@@ -38,7 +38,7 @@ const Register: React.FC<RegisterProps> = ({ login }) => {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/register', {
+      const response = await fetch('https://synapse-hacks-api.onrender.com/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
