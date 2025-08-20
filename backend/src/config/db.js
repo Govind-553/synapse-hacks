@@ -8,39 +8,40 @@ const {
   CREATE_EVENT_PARTICIPANTS_TABLE,
   CREATE_JUDGE_ASSIGNMENTS_TABLE,
   CREATE_REVIEWS_TABLE,
-  CREATE_CERTIFICATES_TABLE
+  CREATE_CERTIFICATES_TABLE,
 } = require('../models/sql-schemas');
 
 /**
  * Connects to MongoDB and sets up the SQL schema.
+ * @param {object} sqlConfig - The mssql configuration object.
+ * @returns {Promise<object>} An object containing the connected SQL pool and Mongoose.
  */
-async function setupDatabase() {
+async function setupDatabase(sqlConfig) {
   try {
-    const config = {
-        server: process.env.SQL_HOST,
-        user: process.env.SQL_USER,
-        password: process.env.SQL_PASSWORD,
-        database: process.env.SQL_DATABASE,
-        options: {
-            encrypt: true, // For Azure SQL
-            trustServerCertificate: false,
-        }
-    };
-    // Connect to SQL Server
-    const sqlConnection = await sql.connect(config);
+    // --- Connect to MongoDB ---
+    await mongoose.connect(process.env.MONGO_URI);
+    console.log('Connected to MongoDB');
+
+    // --- Connect to Azure SQL Server ---
+    const sqlConnection = await sql.connect(sqlConfig);
+    const request = sqlConnection.request();
 
     // Create tables if they don't exist
-    await sqlConnection.request().query(CREATE_USERS_TABLE);
-    await sqlConnection.request().query(CREATE_EVENTS_TABLE);
-    await sqlConnection.request().query(CREATE_TEAMS_TABLE);
-    await sqlConnection.request().query(CREATE_TEAM_MEMBERS_TABLE);
-    await sqlConnection.request().query(CREATE_EVENT_PARTICIPANTS_TABLE);
-    await sqlConnection.request().query(CREATE_JUDGE_ASSIGNMENTS_TABLE);
-    await sqlConnection.request().query(CREATE_REVIEWS_TABLE);
-    await sqlConnection.request().query(CREATE_CERTIFICATES_TABLE);
+    await request.query(CREATE_USERS_TABLE);
+    await request.query(CREATE_EVENTS_TABLE);
+    await request.query(CREATE_TEAMS_TABLE);
+    await request.query(CREATE_TEAM_MEMBERS_TABLE);
+    await request.query(CREATE_EVENT_PARTICIPANTS_TABLE);
+    await request.query(CREATE_JUDGE_ASSIGNMENTS_TABLE);
+    await request.query(CREATE_REVIEWS_TABLE);
+    await request.query(CREATE_CERTIFICATES_TABLE);
     
-    console.log('SQL schema created successfully.');
+    console.log('Azure SQL schema created successfully.');
     sqlConnection.close();
+
+    // Return an object with both database connections
+    const sqlPool = await new sql.ConnectionPool(sqlConfig).connect();
+    return { sqlPool, mongo: mongoose };
 
   } catch (error) {
     console.error('Database setup failed:', error);

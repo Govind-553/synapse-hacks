@@ -74,7 +74,10 @@ const Navigation: React.FC<NavigationProps> = ({ user, logout }) => {
                   <Button variant="glass" className="space-x-2">
                     <Avatar className="h-6 w-6">
                       <AvatarImage src={user.avatar} />
-                      <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
+                      <AvatarFallback>
+                        {/* FIX: Add a check to prevent crash on initial render */}
+                        {user.name && user.name.charAt(0).toUpperCase()}
+                      </AvatarFallback>
                     </Avatar>
                     <span>{user.name}</span>
                   </Button>

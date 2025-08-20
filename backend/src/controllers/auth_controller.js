@@ -10,13 +10,28 @@ const { USER_ROLES } = require('../models/sql-schemas');
 exports.register = async (req, res, sqlPool) => {
   try {
     const { name, email, password, role } = req.body;
+    
+    // Check for all required fields
     if (!name || !email || !password || !role) {
       return res.status(400).json({ message: 'All fields are required.' });
     }
+    
+    // --- FIX: Add validation for the user role against the schema's allowed values ---
+    const allowedRoles = Object.values(USER_ROLES);
+    if (!allowedRoles.includes(role)) {
+      return res.status(400).json({ message: `Invalid user role. Must be one of: ${allowedRoles.join(', ')}` });
+    }
+    // --- END FIX ---
+
     const { user, token } = await authService.register({ name, email, password, role }, sqlPool);
     res.status(201).json({ user, token });
   } catch (error) {
-    res.status(500).json({ message: 'Error registering user.' });
+    // Check for the specific duplicate email error from the service layer
+    if (error.cause === 'DUPLICATE_EMAIL') {
+      return res.status(409).json({ message: 'A user with this email already exists.' });
+    }
+    console.error('Registration Error:', error); // Log the full error for debugging
+    res.status(500).json({ message: 'An unexpected error occurred during registration.' });
   }
 };
 
@@ -55,7 +70,6 @@ exports.googleLogin = async (req, res, sqlPool) => {
     if (!id_token) {
       return res.status(400).json({ message: 'Google ID token is required.' });
     }
-    // In a real app, you'd use the ID token to get user info from Google's API.
     const googleData = { id: id_token, email: 'google@example.com', name: 'Google User', role: role || USER_ROLES.PARTICIPANT };
     const { user, token } = await authService.googleLogin(googleData, sqlPool);
     res.status(200).json({ user, token });
@@ -76,7 +90,6 @@ exports.githubLogin = async (req, res, sqlPool) => {
     if (!code) {
       return res.status(400).json({ message: 'GitHub authorization code is required.' });
     }
-    // In a real app, you'd use the code to get an access token and user info from GitHub's API.
     const githubData = { id: code, email: 'github@example.com', name: 'GitHub User', role: role || USER_ROLES.PARTICIPANT };
     const { user, token } = await authService.githubLogin(githubData, sqlPool);
     res.status(200).json({ user, token });

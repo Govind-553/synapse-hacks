@@ -1,38 +1,82 @@
 /**
- * @fileoverview Defines the Mongoose schemas for the MongoDB database.
+ * @fileoverview Defines Mongoose schemas for MongoDB collections.
  */
 
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
-// Schema for a Project Submission.
-// Stores submission-specific details that can be easily updated.
-const SubmissionSchema = new Schema({
-  team_id: { type: Number, required: true },
-  event_id: { type: Number, required: true },
-  project_title: { type: String, required: true },
-  description: { type: String, required: true },
-  github_url: { type: String, required: true },
-  demo_video_url: String,
-  live_demo_url: String,
-  documentation_url: String,
-  status: { type: String, enum: ['pending', 'submitted', 'reviewed'], default: 'submitted' },
-  total_score: { type: Number, default: 0 },
-  created_at: { type: Date, default: Date.now }
+// Schema for Submissions
+const submissionSchema = new Schema({
+  eventId: {
+    type: Number,
+    required: true,
+  },
+  teamId: {
+    type: Number,
+    required: true,
+  },
+  projectTitle: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  description: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  githubUrl: {
+    type: String,
+    trim: true,
+  },
+  demoUrl: {
+    type: String,
+    trim: true,
+  },
+  videoUrl: {
+    type: String,
+    trim: true,
+  },
+  documentationUrl: {
+    type: String,
+    trim: true,
+  },
+  created_at: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
-// Schema for Announcements.
-// Stores announcements that can be broadcasted in real-time.
-const AnnouncementSchema = new Schema({
-  event_id: { type: Number, required: true },
-  title: { type: String, required: true },
-  content: { type: String, required: true },
-  priority: { type: String, enum: ['low', 'medium', 'high', 'urgent'], default: 'medium' },
-  author_id: { type: Number, required: true },
-  created_at: { type: Date, default: Date.now }
+// Schema for Announcements
+const announcementSchema = new Schema({
+  eventId: {
+    type: Number,
+    required: true,
+  },
+  title: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  message: {
+    type: String,
+    required: true,
+  },
+  priority: {
+    type: String,
+    enum: ['low', 'medium', 'high', 'urgent'],
+    default: 'low',
+  },
+  created_at: {
+    type: Date,
+    default: Date.now,
+  },
 });
+
+const Submission = mongoose.model('Submission', submissionSchema);
+const Announcement = mongoose.model('Announcement', announcementSchema);
 
 module.exports = {
-  SubmissionSchema,
-  AnnouncementSchema,
+  Submission,
+  Announcement,
 };
